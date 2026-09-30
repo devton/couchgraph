@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  couchdb:
+    image: couchdb:3.4
+    container_name: couchgraph-couchdb
+    restart: unless-stopped
+    ports:
+      - "5984:5984"
+    environment:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: password
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5984/_up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  couchgraph:
+    build: .
+    container_name: couchgraph-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      COUCHGRAPH_COUCHDB_URL: http://couchdb:5984
+      COUCHGRAPH_COUCHDB_USER: admin
+      COUCHGRAPH_COUCHDB_PASSWORD: password
+      COUCHGRAPH_COUCHDB_DATABASE: couchgraph
+      COUCHGRAPH_SERVER_PORT: 8080
+      COUCHGRAPH_SERVER_PLAYGROUND_ENABLED: "true"
+      COUCHGRAPH_LOG_FORMAT: json
+    depends_on:
+      couchdb:
+        condition: service_healthy
+
+volumes:
+  couchdb_data:

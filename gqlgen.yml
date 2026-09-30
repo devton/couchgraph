@@ -1,0 +1,34 @@
+# gqlgen configuration
+# https://gqlgen.com/config/
+
+schema:
+  - internal/graph/schema/*.graphqls
+
+exec:
+  filename: internal/graph/generated/generated.go
+  package: generated
+
+model:
+  filename: internal/graph/model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: internal/graph/resolver
+  package: resolver
+  filename_template: "{name}.resolvers.go"
+
+# Map the "Map" scalar to Go's any type
+models:
+  Map:
+    model:
+      - github.com/ton/couchgraph/internal/graph/scalar.Map
+
+# Do not auto-bind models — keep generated and domain models separate
+autobind: []
+
+# Omit the federation block unless we add federation later
+federation:
+  filename: internal/graph/generated/federation.go
+  package: generated
+  version: 2

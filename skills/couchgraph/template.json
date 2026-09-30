@@ -1,0 +1,88 @@
+{
+  "name": "couchgraph",
+  "version": "1.0.0",
+  "entry": "SKILL.md",
+  "routing": "router-only",
+  "commands": [
+    {
+      "name": "radioactive",
+      "description": "14-phase full development lifecycle embedding Matt Pocock AI Hero skills",
+      "skill": "workflows/radioactive/SKILL.md"
+    },
+    {
+      "name": "wayfinder",
+      "description": "Codebase mapping, entrypoint discovery, and intent framing",
+      "skill": "workflows/mattpocock/wayfinder/SKILL.md"
+    },
+    {
+      "name": "grilling",
+      "description": "Socratic interrogation & decision log generation",
+      "skill": "workflows/mattpocock/grilling/SKILL.md"
+    },
+    {
+      "name": "domain-modeling",
+      "description": "Entities, aggregate roots, UUIDv7 keys, state machines",
+      "skill": "workflows/mattpocock/domain-modeling/SKILL.md"
+    },
+    {
+      "name": "research",
+      "description": "Technical spikes & external API investigation",
+      "skill": "workflows/mattpocock/research/SKILL.md"
+    },
+    {
+      "name": "prototype",
+      "description": "POC validation for high-risk logic",
+      "skill": "workflows/mattpocock/prototype/SKILL.md"
+    },
+    {
+      "name": "to-spec",
+      "description": "Synthesize upstream discoveries into docs/tasks/task.<ref>.md",
+      "skill": "workflows/mattpocock/to-spec/SKILL.md"
+    },
+    {
+      "name": "c4-architecture",
+      "description": "Generate Mermaid C4 architecture diagrams",
+      "skill": "workflows/c4-architecture/SKILL.md"
+    },
+    {
+      "name": "document",
+      "description": "Evidence-based documentation updates",
+      "skill": "workflows/document/SKILL.md"
+    },
+    {
+      "name": "review",
+      "description": "Code quality audit and severity findings",
+      "skill": "workflows/review/SKILL.md"
+    },
+    {
+      "name": "thermo-review",
+      "description": "Deep thermonuclear code quality inspection",
+      "skill": "workflows/thermo-nuclear-code-quality-review/SKILL.md"
+    },
+    {
+      "name": "thermo-fix",
+      "description": "Iterative fix loop for code review findings",
+      "skill": "workflows/thermo-fix/SKILL.md"
+    },
+    {
+      "name": "changelog",
+      "description": "Customer-facing release notes",
+      "skill": "workflows/changelog/SKILL.md"
+    },
+    {
+      "name": "plan-to-blueprint",
+      "description": "Transform approved plan into reusable workflow contract",
+      "skill": "workflows/plan-to-blueprint/SKILL.md"
+    },
+    {
+      "name": "brainstorming",
+      "description": "Socratic discovery and idea generation",
+      "skill": "workflows/brainstorming/SKILL.md"
+    },
+    {
+      "name": "plan-writing",
+      "description": "Structured task planning and verification matrices",
+      "skill": "workflows/plan-writing/SKILL.md"
+    }
+  ]
+}

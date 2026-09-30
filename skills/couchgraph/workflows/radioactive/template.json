@@ -1,0 +1,7 @@
+{
+  "name": "radioactive",
+  "version": "1.0.0",
+  "entry": "SKILL.md",
+  "parent": "skills/couchgraph/SKILL.md",
+  "description": "14-phase end-to-end development lifecycle for CouchGraph embedding Matt Pocock AI Hero skills"
+}

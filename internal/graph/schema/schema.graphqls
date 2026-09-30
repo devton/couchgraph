@@ -1,0 +1,158 @@
+"""
+A raw JSON document stored in CouchDB.
+Fields _id and _rev are always present on fetched documents.
+"""
+type Document {
+  _id: ID!
+  _rev: String!
+  """
+  The remaining fields of the document as a raw JSON map.
+  Use typed queries (via future schema extensions) for strongly-typed access.
+  """
+  data: Map!
+}
+
+"""
+Result of a Mango _find query.
+"""
+type FindResult {
+  docs: [Document!]!
+  """
+  Opaque bookmark for cursor-based pagination (pass to next findDocs call).
+  """
+  bookmark: String
+  """
+  Warning message from CouchDB if the query used a slow index.
+  """
+  warning: String
+}
+
+"""
+Result of a CouchDB View (_design/_view) query.
+"""
+type ViewRow {
+  id: ID
+  key: Map
+  value: Map
+  doc: Document
+}
+
+type ViewResult {
+  rows: [ViewRow!]!
+  totalRows: Int!
+  offset: Int!
+}
+
+"""
+Input for a Mango selector query (_find).
+"""
+input FindInput {
+  """JSON-encoded Mango selector, e.g. {"type": "user"}"""
+  selector: Map!
+  """Fields to return (projection). Empty means return all fields."""
+  fields:   [String!]
+  """Sort descriptors, e.g. [{"name": "asc"}]"""
+  sort:     [Map!]
+  limit:    Int
+  skip:     Int
+  """Opaque bookmark from a previous FindResult for cursor pagination."""
+  bookmark: String
+}
+
+"""
+Input for a CouchDB View query.
+"""
+input ViewInput {
+  designDoc: String!
+  viewName:  String!
+  startKey:  Map
+  endKey:    Map
+  limit:     Int
+  skip:      Int
+  descending: Boolean
+  includeDocs: Boolean
+  reduce:    Boolean
+  groupLevel: Int
+}
+
+"""
+Input for creating or replacing a document.
+"""
+input UpsertInput {
+  """
+  Optional document ID. If omitted, a new UUIDv7 ID is generated.
+  If the document already exists, _rev must be provided to update it.
+  """
+  _id:  ID
+  """Required when updating an existing document."""
+  _rev: String
+  """Document body (will be merged with _id/_rev)."""
+  data: Map!
+}
+
+"""
+Input for deleting a document.
+"""
+input DeleteInput {
+  _id:  ID!
+  _rev: String!
+}
+
+type MutationResult {
+  ok:  Boolean!
+  _id: ID!
+  _rev: String!
+}
+
+type BulkResult {
+  results: [MutationResult!]!
+}
+
+"""
+Input for a bulk write (create/update/delete) operation.
+"""
+input BulkDocsInput {
+  docs: [UpsertInput!]!
+}
+
+# ─── Queries ────────────────────────────────────────────────────────────────
+
+type Query {
+  """Fetch a single document by its ID."""
+  document(id: ID!): Document
+
+  """Fetch multiple documents by their IDs in a single _bulk_get request."""
+  documents(ids: [ID!]!): [Document]!
+
+  """Run a Mango (_find) query."""
+  findDocs(input: FindInput!): FindResult!
+
+  """Query a CouchDB View (MapReduce design document)."""
+  queryView(input: ViewInput!): ViewResult!
+
+  """List all databases available on the CouchDB instance."""
+  databases: [String!]!
+
+  """Server info (version, vendor, etc.)."""
+  serverInfo: Map!
+}
+
+# ─── Mutations ──────────────────────────────────────────────────────────────
+
+type Mutation {
+  """Create or update a single document. Generates a UUIDv7 ID if none supplied."""
+  upsertDoc(input: UpsertInput!): MutationResult!
+
+  """Delete a document."""
+  deleteDoc(input: DeleteInput!): MutationResult!
+
+  """Bulk create/update/delete in one CouchDB request."""
+  bulkDocs(input: BulkDocsInput!): BulkResult!
+}
+
+# ─── Scalars ────────────────────────────────────────────────────────────────
+
+"""
+Arbitrary JSON value (object, array, string, number, boolean, or null).
+"""
+scalar Map
