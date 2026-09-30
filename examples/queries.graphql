@@ -1,0 +1,205 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CouchGraph GraphQL Example Queries & Mutations
+# Use these directly in GraphQL Playground (http://localhost:8080)
+# or import into your favorite GraphQL client (Postman, Insomnia, Altair).
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── 1. Create a Document (UUIDv7 auto-generated) ─────────────────────────────
+mutation CreateUser {
+  upsertDoc(input: {
+    data: {
+      type: "user"
+      name: "Alice Silva"
+      email: "alice@example.com"
+      role: "admin"
+      tags: ["engineering", "couchdb"]
+      active: true
+    }
+  }) {
+    ok
+    _id
+    _rev
+  }
+}
+
+# ── 2. Create Document with Specific ID ──────────────────────────────────────
+mutation CreateUserWithID {
+  upsertDoc(input: {
+    _id: "01927f3a-b1c2-7e4d-a9f0-123456789abc"
+    data: {
+      type: "user"
+      name: "Bob Santos"
+      email: "bob@example.com"
+      role: "developer"
+      active: true
+    }
+  }) {
+    ok
+    _id
+    _rev
+  }
+}
+
+# ── 3. Update an Existing Document (requires _rev) ───────────────────────────
+mutation UpdateUser {
+  upsertDoc(input: {
+    _id: "01927f3a-b1c2-7e4d-a9f0-123456789abc"
+    _rev: "1-923847293847293847" # Pass current _rev from previous query
+    data: {
+      type: "user"
+      name: "Bob Santos (Updated)"
+      email: "bob.santos@example.com"
+      role: "lead-developer"
+      active: true
+    }
+  }) {
+    ok
+    _id
+    _rev
+  }
+}
+
+# ── 4. Fetch a Single Document by ID ─────────────────────────────────────────
+query GetUser {
+  document(id: "01927f3a-b1c2-7e4d-a9f0-123456789abc") {
+    _id
+    _rev
+    data
+  }
+}
+
+# ── 5. Batch Fetch Documents (Uses _bulk_get — No N+1 Problem) ───────────────
+query GetMultipleUsers {
+  documents(ids: [
+    "01927f3a-b1c2-7e4d-a9f0-123456789abc",
+    "01927f3a-c3d4-7e4d-b0a1-987654321def"
+  ]) {
+    _id
+    _rev
+    data
+  }
+}
+
+# ── 6. Query with Mango Selector (_find) ─────────────────────────────────────
+query FindActiveUsers {
+  findDocs(input: {
+    selector: {
+      type: "user"
+      active: true
+    }
+    fields: ["_id", "_rev", "name", "email", "role"]
+    sort: [
+      { name: "asc" }
+    ]
+    limit: 10
+  }) {
+    docs {
+      _id
+      _rev
+      data
+    }
+    bookmark
+    warning
+  }
+}
+
+# ── 7. Mango Query with Cursor-Based Pagination ──────────────────────────────
+query FindUsersPaginated {
+  findDocs(input: {
+    selector: {
+      type: "user"
+    }
+    limit: 5
+    bookmark: "g2wAAAABaANkAA..." # Pass bookmark returned in previous result
+  }) {
+    docs {
+      _id
+      data
+    }
+    bookmark
+  }
+}
+
+# ── 8. Bulk Write (Create / Update / Delete multiple docs) ───────────────────
+mutation BulkInsertProducts {
+  bulkDocs(input: {
+    docs: [
+      {
+        data: {
+          type: "product"
+          sku: "PROD-001"
+          name: "Wireless Keyboard"
+          price: 79.99
+          inStock: true
+        }
+      },
+      {
+        data: {
+          type: "product"
+          sku: "PROD-002"
+          name: "Ergonomic Mouse"
+          price: 49.90
+          inStock: true
+        }
+      },
+      {
+        data: {
+          type: "product"
+          sku: "PROD-003"
+          name: "USB-C Hub Multiport"
+          price: 35.00
+          inStock: false
+        }
+      }
+    ]
+  }) {
+    results {
+      ok
+      _id
+      _rev
+    }
+  }
+}
+
+# ── 9. Delete a Document ─────────────────────────────────────────────────────
+mutation DeleteUser {
+  deleteDoc(input: {
+    _id: "01927f3a-b1c2-7e4d-a9f0-123456789abc"
+    _rev: "2-987654321abcdef0"
+  }) {
+    ok
+    _id
+    _rev
+  }
+}
+
+# ── 10. Query a CouchDB View (MapReduce) ─────────────────────────────────────
+query QueryViewByEmail {
+  queryView(input: {
+    designDoc: "users"
+    viewName: "by_email"
+    startKey: "a"
+    endKey: "z\ufff0"
+    limit: 20
+    includeDocs: true
+  }) {
+    totalRows
+    offset
+    rows {
+      id
+      key
+      value
+      doc {
+        _id
+        _rev
+        data
+      }
+    }
+  }
+}
+
+# ── 11. Server Diagnostics & Database List ───────────────────────────────────
+query ServerDiagnostics {
+  databases
+  serverInfo
+}

@@ -23,6 +23,17 @@ CouchGraph exposes your CouchDB documents through a strongly-typed, schema-first
 
 ---
 
+## Documentation & Guides
+
+- 🚀 [Getting Started Guide](file:///Users/ton/work/couchgraph/docs/getting-started.md) — Local setup, first queries, configuration
+- 📖 [GraphQL API Reference](file:///Users/ton/work/couchgraph/docs/graphql-api.md) — Detailed reference for all queries, mutations, scalars, and inputs
+- 🏛️ [Architecture Deep Dive](file:///Users/ton/work/couchgraph/docs/architecture.md) — DataLoader batching, UUIDv7 indexing, and layer design
+- 🚢 [Dokploy Deployment Guide](file:///Users/ton/work/couchgraph/docs/deployment-dokploy.md) — Production deployment with Traefik and auto SSL
+- 💡 [Example Queries (`examples/queries.graphql`)](file:///Users/ton/work/couchgraph/examples/queries.graphql) — Ready-to-use GraphQL queries
+- 🐳 [Dokploy Docker Compose (`docker-compose.dokploy.yml`)](file:///Users/ton/work/couchgraph/docker-compose.dokploy.yml) — Production Compose stack
+
+---
+
 ## Quick Start
 
 ### 1. Start CouchDB locally
