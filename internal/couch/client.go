@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	_ "github.com/go-kivik/kivik/v4/couchdb" // register CouchDB driver
 	kivik "github.com/go-kivik/kivik/v4"
@@ -62,28 +64,21 @@ func (c *Client) DB() *kivik.DB { return c.db }
 // Kivik returns the raw Kivik client for advanced operations.
 func (c *Client) Kivik() *kivik.Client { return c.kv }
 
-// buildDSN constructs a CouchDB DSN with embedded credentials.
+// buildDSN constructs a CouchDB DSN with embedded credentials safely escaped.
 // Format: http://user:password@host:port
 func buildDSN(cfg *config.CouchDBConfig) string {
-	// Insert credentials into the URL.
-	// Kivik accepts the standard http://user:pass@host DSN format.
-	url := cfg.URL
-
-	// Only inject credentials if both are present.
-	if cfg.User != "" && cfg.Password != "" {
-		// Strip any existing scheme prefix, then re-attach with credentials.
-		const httpScheme  = "http://"
-		const httpsScheme = "https://"
-
-		switch {
-		case len(url) > len(httpsScheme) && url[:len(httpsScheme)] == httpsScheme:
-			url = httpsScheme + cfg.User + ":" + cfg.Password + "@" + url[len(httpsScheme):]
-		case len(url) > len(httpScheme) && url[:len(httpScheme)] == httpScheme:
-			url = httpScheme + cfg.User + ":" + cfg.Password + "@" + url[len(httpScheme):]
-		}
+	rawURL := cfg.URL
+	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
+		rawURL = "http://" + rawURL
 	}
-
-	return url
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return cfg.URL
+	}
+	if cfg.User != "" && cfg.Password != "" {
+		u.User = url.UserPassword(cfg.User, cfg.Password)
+	}
+	return u.String()
 }
 
 // HTTPClient returns a plain *http.Client for raw CouchDB HTTP calls
