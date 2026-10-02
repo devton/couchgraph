@@ -72,14 +72,14 @@ services:
     container_name: couchgraph-server
     restart: unless-stopped
     environment:
-      COUCHGRAPH_COUCHDB_URL: http://couchdb:5984
-      COUCHGRAPH_COUCHDB_USER: ${COUCHDB_USER:-admin}
-      COUCHGRAPH_COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-changeme_secure_password}
-      COUCHGRAPH_COUCHDB_DATABASE: ${COUCHGRAPH_DATABASE:-couchgraph}
-      COUCHGRAPH_SERVER_PORT: 8080
-      COUCHGRAPH_SERVER_PLAYGROUND_ENABLED: ${PLAYGROUND_ENABLED:-false}
-      COUCHGRAPH_LOG_LEVEL: ${LOG_LEVEL:-info}
-      COUCHGRAPH_LOG_FORMAT: json
+      COUCHDB_URL: http://couchdb:5984
+      COUCHDB_USER: ${COUCHDB_USER:-admin}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-changeme_secure_password}
+      COUCHDB_DATABASE: ${COUCHDB_DATABASE:-couchgraph}
+      PORT: 8080
+      PLAYGROUND_ENABLED: ${PLAYGROUND_ENABLED:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: json
     depends_on:
       couchdb:
         condition: service_healthy
@@ -117,12 +117,12 @@ Navigate to the **Environment** tab in Dokploy and fill in your production value
 # Domain pointing to your server's public IP (configure DNS A-record first)
 DOMAIN=graphql.yourdomain.com
 
-# CouchDB Admin Credentials
+# CouchDB Administrator Credentials
 COUCHDB_USER=admin
 COUCHDB_PASSWORD=YOUR_STRONG_PASSWORD_HERE
 
 # CouchDB database name
-COUCHGRAPH_DATABASE=couchgraph_production
+COUCHDB_DATABASE=couchgraph_production
 
 # Disable Playground in public production (set to true if desired)
 PLAYGROUND_ENABLED=false

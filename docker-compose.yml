@@ -8,10 +8,11 @@ services:
     ports:
       - "5984:5984"
     environment:
-      COUCHDB_USER: admin
-      COUCHDB_PASSWORD: password
+      COUCHDB_USER: ${COUCHDB_USER:-admin}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-password}
     volumes:
       - couchdb_data:/opt/couchdb/data
+      - ./docker/couchdb/10-single-node.ini:/opt/couchdb/etc/local.d/10-single-node.ini:ro
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:5984/_up"]
       interval: 10s
@@ -24,15 +25,16 @@ services:
     container_name: couchgraph-server
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${PORT:-8080}:8080"
     environment:
-      COUCHGRAPH_COUCHDB_URL: http://couchdb:5984
-      COUCHGRAPH_COUCHDB_USER: admin
-      COUCHGRAPH_COUCHDB_PASSWORD: password
-      COUCHGRAPH_COUCHDB_DATABASE: couchgraph
-      COUCHGRAPH_SERVER_PORT: 8080
-      COUCHGRAPH_SERVER_PLAYGROUND_ENABLED: "true"
-      COUCHGRAPH_LOG_FORMAT: json
+      COUCHDB_URL: http://couchdb:5984
+      COUCHDB_USER: ${COUCHDB_USER:-admin}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-password}
+      COUCHDB_DATABASE: ${COUCHDB_DATABASE:-couchgraph}
+      PORT: 8080
+      PLAYGROUND_ENABLED: ${PLAYGROUND_ENABLED:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-console}
     depends_on:
       couchdb:
         condition: service_healthy

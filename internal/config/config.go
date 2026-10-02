@@ -3,6 +3,8 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -82,6 +84,34 @@ func Load() (*Config, error) {
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("config: unmarshal failed: %w", err)
+	}
+
+	// ── Fallback for direct un-prefixed env vars (e.g. COUCHDB_PASSWORD, PORT) ─
+	if val := os.Getenv("COUCHDB_URL"); val != "" {
+		cfg.CouchDB.URL = val
+	}
+	if val := os.Getenv("COUCHDB_USER"); val != "" {
+		cfg.CouchDB.User = val
+	}
+	if val := os.Getenv("COUCHDB_PASSWORD"); val != "" {
+		cfg.CouchDB.Password = val
+	}
+	if val := os.Getenv("COUCHDB_DATABASE"); val != "" {
+		cfg.CouchDB.Database = val
+	}
+	if val := os.Getenv("PORT"); val != "" {
+		if p, err := strconv.Atoi(val); err == nil && p > 0 {
+			cfg.Server.Port = p
+		}
+	}
+	if val := os.Getenv("PLAYGROUND_ENABLED"); val != "" {
+		cfg.Server.PlaygroundEnabled = val == "true" || val == "1"
+	}
+	if val := os.Getenv("LOG_LEVEL"); val != "" {
+		cfg.Log.Level = val
+	}
+	if val := os.Getenv("LOG_FORMAT"); val != "" {
+		cfg.Log.Format = val
 	}
 
 	return &cfg, nil
