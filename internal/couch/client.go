@@ -5,11 +5,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
-	_ "github.com/go-kivik/kivik/v4/couchdb" // register CouchDB driver
 	kivik "github.com/go-kivik/kivik/v4"
+	"github.com/go-kivik/kivik/v4/couchdb"
 
 	"github.com/ton/couchgraph/internal/config"
 )
@@ -23,9 +22,18 @@ type Client struct {
 
 // New creates and validates a connection to CouchDB using the provided config.
 func New(ctx context.Context, cfg *config.CouchDBConfig) (*Client, error) {
-	dsn := buildDSN(cfg)
+	targetURL := cfg.URL
+	if !strings.HasPrefix(targetURL, "http://") && !strings.HasPrefix(targetURL, "https://") {
+		targetURL = "http://" + targetURL
+	}
 
-	kv, err := kivik.New("couch", dsn)
+	var opts []kivik.Option
+	if cfg.User != "" && cfg.Password != "" {
+		// Use explicit HTTP Basic Authentication on every request (exact same behavior as curl)
+		opts = append(opts, couchdb.BasicAuth(cfg.User, cfg.Password))
+	}
+
+	kv, err := kivik.New("couch", targetURL, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("couch: failed to create kivik client: %w", err)
 	}
@@ -63,23 +71,6 @@ func (c *Client) DB() *kivik.DB { return c.db }
 
 // Kivik returns the raw Kivik client for advanced operations.
 func (c *Client) Kivik() *kivik.Client { return c.kv }
-
-// buildDSN constructs a CouchDB DSN with embedded credentials safely escaped.
-// Format: http://user:password@host:port
-func buildDSN(cfg *config.CouchDBConfig) string {
-	rawURL := cfg.URL
-	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
-		rawURL = "http://" + rawURL
-	}
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return cfg.URL
-	}
-	if cfg.User != "" && cfg.Password != "" {
-		u.User = url.UserPassword(cfg.User, cfg.Password)
-	}
-	return u.String()
-}
 
 // HTTPClient returns a plain *http.Client for raw CouchDB HTTP calls
 // (e.g. _bulk_get) that Kivik does not yet expose via its high-level API.

@@ -45,4 +45,18 @@ func TestEnvLoading(t *testing.T) {
 	if cfg2.Server.Port != 9090 {
 		t.Errorf("expected port 9090, got %d", cfg2.Server.Port)
 	}
+
+	// Test quoted and spaced environment variables
+	os.Setenv("COUCHDB_PASSWORD", " \"senha_com_aspas\" ")
+	os.Setenv("COUCHDB_USER", "'admin_com_aspas' ")
+	cfg3, err := Load()
+	if err != nil {
+		t.Fatalf("Load with quoted envs failed: %v", err)
+	}
+	if cfg3.CouchDB.Password != "senha_com_aspas" {
+		t.Errorf("expected 'senha_com_aspas', got %q", cfg3.CouchDB.Password)
+	}
+	if cfg3.CouchDB.User != "admin_com_aspas" {
+		t.Errorf("expected 'admin_com_aspas', got %q", cfg3.CouchDB.User)
+	}
 }

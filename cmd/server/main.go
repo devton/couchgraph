@@ -47,9 +47,21 @@ func main() {
 	connCtx, connCancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer connCancel()
 
+	log.Info("connecting to CouchDB",
+		zap.String("url", cfg.CouchDB.URL),
+		zap.String("user", cfg.CouchDB.User),
+		zap.String("database", cfg.CouchDB.Database),
+		zap.Int("password_len", len(cfg.CouchDB.Password)),
+	)
+
 	couchClient, err := couch.New(connCtx, &cfg.CouchDB)
 	if err != nil {
-		log.Fatal("failed to connect to CouchDB", zap.Error(err))
+		log.Fatal("failed to connect to CouchDB",
+			zap.String("url", cfg.CouchDB.URL),
+			zap.String("user", cfg.CouchDB.User),
+			zap.Int("password_len", len(cfg.CouchDB.Password)),
+			zap.Error(err),
+		)
 	}
 	log.Info("connected to CouchDB",
 		zap.String("url", cfg.CouchDB.URL),

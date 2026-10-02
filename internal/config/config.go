@@ -114,5 +114,11 @@ func Load() (*Config, error) {
 		cfg.Log.Format = val
 	}
 
+	// ── Sanitize strings (strip whitespace and accidental quotes from env vars) ─
+	cfg.CouchDB.User = strings.Trim(strings.TrimSpace(cfg.CouchDB.User), "\"'`")
+	cfg.CouchDB.Password = strings.Trim(strings.TrimSpace(cfg.CouchDB.Password), "\"'`")
+	cfg.CouchDB.URL = strings.Trim(strings.TrimSpace(cfg.CouchDB.URL), "\"'`")
+	cfg.CouchDB.Database = strings.Trim(strings.TrimSpace(cfg.CouchDB.Database), "\"'`")
+
 	return &cfg, nil
 }
