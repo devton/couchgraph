@@ -38,10 +38,12 @@ func New(ctx context.Context, cfg *config.CouchDBConfig) (*Client, error) {
 		return nil, fmt.Errorf("couch: failed to create kivik client: %w", err)
 	}
 
-	// Verify connectivity with a lightweight ping.
-	if _, err := kv.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("couch: ping failed (%s): %w", cfg.URL, err)
+	// Verify connectivity and authentication by querying the CouchDB root endpoint (GET /).
+	version, err := kv.Version(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("couch: connection failed (%s): %w", cfg.URL, err)
 	}
+	_ = version // connection verified
 
 	// Ensure system databases (_users, _replicator, _global_changes) and the target database exist.
 	dbsToEnsure := []string{"_users", "_replicator", "_global_changes", cfg.Database}
@@ -51,7 +53,7 @@ func New(ctx context.Context, cfg *config.CouchDBConfig) (*Client, error) {
 			return nil, fmt.Errorf("couch: cannot check database existence (%s): %w", dbName, err)
 		}
 		if !exists {
-			if err := kv.CreateDB(ctx, dbName); err != nil {
+			if err := kv.CreateDB(ctx, dbName); err != nil && kivik.HTTPStatus(err) != http.StatusPreconditionFailed {
 				return nil, fmt.Errorf("couch: cannot create database %q: %w", dbName, err)
 			}
 		}
