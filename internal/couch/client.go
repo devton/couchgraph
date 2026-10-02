@@ -33,14 +33,17 @@ func New(ctx context.Context, cfg *config.CouchDBConfig) (*Client, error) {
 		return nil, fmt.Errorf("couch: ping failed (%s): %w", cfg.URL, err)
 	}
 
-	// Ensure the target database exists; create it if it does not.
-	exists, err := kv.DBExists(ctx, cfg.Database)
-	if err != nil {
-		return nil, fmt.Errorf("couch: cannot check database existence: %w", err)
-	}
-	if !exists {
-		if err := kv.CreateDB(ctx, cfg.Database); err != nil {
-			return nil, fmt.Errorf("couch: cannot create database %q: %w", cfg.Database, err)
+	// Ensure system databases (_users, _replicator, _global_changes) and the target database exist.
+	dbsToEnsure := []string{"_users", "_replicator", "_global_changes", cfg.Database}
+	for _, dbName := range dbsToEnsure {
+		exists, err := kv.DBExists(ctx, dbName)
+		if err != nil {
+			return nil, fmt.Errorf("couch: cannot check database existence (%s): %w", dbName, err)
+		}
+		if !exists {
+			if err := kv.CreateDB(ctx, dbName); err != nil {
+				return nil, fmt.Errorf("couch: cannot create database %q: %w", dbName, err)
+			}
 		}
 	}
 
