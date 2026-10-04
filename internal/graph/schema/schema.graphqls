@@ -3,11 +3,15 @@ A raw JSON document stored in CouchDB.
 Fields _id and _rev are always present on fetched documents.
 """
 type Document {
+  """Document unique identifier (UUIDv7 format recommended)."""
   _id: ID!
+
+  """CouchDB document revision token."""
   _rev: String!
+
   """
   The remaining fields of the document as a raw JSON map.
-  Use typed queries (via future schema extensions) for strongly-typed access.
+  Arbitrary JSON key-value pairs stored in the document.
   """
   data: Map!
 }
@@ -16,30 +20,48 @@ type Document {
 Result of a Mango _find query.
 """
 type FindResult {
+  """Matching documents returned by the selector."""
   docs: [Document!]!
+
   """
   Opaque bookmark for cursor-based pagination (pass to next findDocs call).
   """
   bookmark: String
+
   """
-  Warning message from CouchDB if the query used a slow index.
+  Warning message from CouchDB if the query used an unindexed or slow scan.
   """
   warning: String
 }
 
 """
-Result of a CouchDB View (_design/_view) query.
+A single row in a CouchDB View (_design/_view) result.
 """
 type ViewRow {
+  """Document ID emitted by the map function (null for reduced rows)."""
   id: ID
+
+  """The key emitted by the map function or grouping key in reduce."""
   key: Map
+
+  """The value emitted by the map function or the aggregated reduce value."""
   value: Map
+
+  """The full document if includeDocs was set to true."""
   doc: Document
 }
 
+"""
+Result of querying a CouchDB MapReduce View.
+"""
 type ViewResult {
+  """Array of emitted or reduced view rows."""
   rows: [ViewRow!]!
+
+  """Total rows in the view index (or total returned rows in reduce queries)."""
   totalRows: Int!
+
+  """Starting row offset within the view index."""
   offset: Int!
 }
 
@@ -47,40 +69,80 @@ type ViewResult {
 Input for a Mango selector query (_find).
 """
 input FindInput {
-  """JSON-encoded Mango selector, e.g. {"type": "user"}"""
+  """
+  JSON-encoded Mango selector.
+  Examples:
+    {"type": "movie", "rating": {"$gte": 8.5}}
+    {"type": "movie", "genres": {"$in": ["Sci-Fi"]}}
+  """
   selector: Map!
-  """Fields to return (projection). Empty means return all fields."""
+
+  """Fields to return (projection). Empty means return all document fields."""
   fields:   [String!]
-  """Sort descriptors, e.g. [{"name": "asc"}]"""
+
+  """
+  Sort descriptors, e.g. [{"rating": "desc"}, {"year": "asc"}]
+  Requires an appropriate Mango index in CouchDB matching the sort order.
+  """
   sort:     [Map!]
+
+  """Maximum number of documents to return."""
   limit:    Int
+
+  """Number of documents to skip before returning."""
   skip:     Int
+
   """Opaque bookmark from a previous FindResult for cursor pagination."""
   bookmark: String
 }
 
 """
-Input for a CouchDB View query.
+Input for a CouchDB View query (_design/{designDoc}/_view/{viewName}).
 """
 input ViewInput {
+  """Design document name without the '_design/' prefix (e.g. 'movies')."""
   designDoc: String!
+
+  """View name defined inside the design document (e.g. 'by_genre', 'top_rated')."""
   viewName:  String!
-  """Exact single key match (e.g. key: "Action" or key: 2010)."""
+
+  """Exact single key match (e.g. key: "Drama" or key: 1994)."""
   key:       Map
-  """Multiple exact keys match (e.g. keys: ["Action", "Sci-Fi"])."""
+
+  """Multiple exact keys match in one request (e.g. keys: ["Action", "Sci-Fi"])."""
   keys:      [Map!]
+
   """Start of key range (inclusive, or exclusive if descending)."""
   startKey:  Map
+
   """End of key range (inclusive)."""
   endKey:    Map
+
+  """Limit number of rows returned."""
   limit:     Int
+
+  """Number of rows to skip."""
   skip:      Int
+
+  """Reverse result order."""
   descending: Boolean
+
+  """Include full CouchDB document body in each row under the 'doc' field."""
   includeDocs: Boolean
+
+  """
+  Enable or disable reduce function.
+  Set to false to retrieve raw map rows even if view defines a reduce function.
+  """
   reduce:    Boolean
-  """Group by key when reduce is enabled."""
+
+  """
+  Group by exact key when reduce is enabled.
+  Example: group: true with reduce: true calculates aggregate per key.
+  """
   group:     Boolean
-  """Group level for array keys in reduce views."""
+
+  """Group level for array keys in reduce views (e.g. [year, month])."""
   groupLevel: Int
 }
 
@@ -89,12 +151,14 @@ Input for creating or replacing a document.
 """
 input UpsertInput {
   """
-  Optional document ID. If omitted, a new UUIDv7 ID is generated.
+  Optional document ID. If omitted, a new UUIDv7 ID is automatically generated.
   If the document already exists, _rev must be provided to update it.
   """
   _id:  ID
+
   """Required when updating an existing document."""
   _rev: String
+
   """Document body (will be merged with _id/_rev)."""
   data: Map!
 }
@@ -103,17 +167,26 @@ input UpsertInput {
 Input for deleting a document.
 """
 input DeleteInput {
+  """ID of the document to delete."""
   _id:  ID!
+
+  """Current revision (_rev) of the document to delete."""
   _rev: String!
 }
 
 type MutationResult {
+  """Whether the mutation succeeded."""
   ok:  Boolean!
+
+  """The document ID."""
   _id: ID!
+
+  """The new document revision token."""
   _rev: String!
 }
 
 type BulkResult {
+  """Array of results for each document in the bulk operation."""
   results: [MutationResult!]!
 }
 
@@ -121,41 +194,222 @@ type BulkResult {
 Input for a bulk write (create/update/delete) operation.
 """
 input BulkDocsInput {
+  """List of documents to upsert or delete in a single CouchDB transaction."""
   docs: [UpsertInput!]!
 }
 
 # ─── Queries ────────────────────────────────────────────────────────────────
 
 type Query {
-  """Fetch a single document by its ID."""
+  """
+  Fetch a single document by its ID.
+  
+  Example:
+  ```graphql
+  query GetMovie {
+    document(id: "018e3a2b-7c10-7e3f-912a-4bc8d5910123") {
+      _id
+      _rev
+      data
+    }
+  }
+  ```
+  """
   document(id: ID!): Document
 
-  """Fetch multiple documents by their IDs in a single _bulk_get request."""
+  """
+  Fetch multiple documents by their IDs in a single batched `_bulk_get` request.
+  Uses an internal DataLoader to eliminate N+1 query problems.
+  
+  Example:
+  ```graphql
+  query GetMovies($ids: [ID!]!) {
+    documents(ids: $ids) {
+      _id
+      data
+    }
+  }
+  ```
+  """
   documents(ids: [ID!]!): [Document]!
 
-  """Run a Mango (_find) query."""
+  """
+  Run a Mango (`_find`) declarative selector query.
+  
+  Examples:
+  ```graphql
+  # 1. Filter movies by genre and minimum rating
+  query TopSciFi {
+    findDocs(input: {
+      selector: {
+        type: "movie"
+        genres: { "$in": ["Sci-Fi"] }
+        rating: { "$gte": 8.5 }
+      }
+      sort: [{ rating: "desc" }]
+      limit: 10
+    }) {
+      docs { _id data }
+      bookmark
+    }
+  }
+  ```
+  """
   findDocs(input: FindInput!): FindResult!
 
-  """Query a CouchDB View (MapReduce design document)."""
+  """
+  Query a CouchDB MapReduce View (`_design/{designDoc}/_view/{viewName}`).
+  
+  Supports exact key lookups, multi-key lookups, range queries, and reduce aggregations (`_count`, `_stats`, `_sum`).
+  
+  Examples:
+  ```graphql
+  # 1. Exact key lookup
+  query MoviesByGenre {
+    queryView(input: {
+      designDoc: "movies"
+      viewName: "by_genre"
+      key: "Drama"
+      reduce: false
+    }) {
+      totalRows
+      rows { id key value }
+    }
+  }
+
+  # 2. Multi-key lookup
+  query MoviesMultiGenre {
+    queryView(input: {
+      designDoc: "movies"
+      viewName: "by_genre"
+      keys: ["Sci-Fi", "Crime"]
+      reduce: false
+    }) {
+      rows { id key value }
+    }
+  }
+
+  # 3. Grouped reduce count aggregation
+  query MovieCountsPerGenre {
+    queryView(input: {
+      designDoc: "movies"
+      viewName: "by_genre"
+      reduce: true
+      group: true
+    }) {
+      rows { key value }
+    }
+  }
+
+  # 4. Box Office Stats by Genre (_stats reduce)
+  query BoxOfficeStats {
+    queryView(input: {
+      designDoc: "movies"
+      viewName: "box_office_by_genre"
+      reduce: true
+      group: true
+    }) {
+      rows { key value }
+    }
+  }
+  ```
+  """
   queryView(input: ViewInput!): ViewResult!
 
-  """List all databases available on the CouchDB instance."""
+  """
+  List all database names available on the CouchDB cluster.
+  
+  Example:
+  ```graphql
+  query ListDBs {
+    databases
+  }
+  ```
+  """
   databases: [String!]!
 
-  """Server info (version, vendor, etc.)."""
+  """
+  Server info (CouchDB version, vendor details, etc.).
+  
+  Example:
+  ```graphql
+  query GetServerInfo {
+    serverInfo
+  }
+  ```
+  """
   serverInfo: Map!
 }
 
 # ─── Mutations ──────────────────────────────────────────────────────────────
 
 type Mutation {
-  """Create or update a single document. Generates a UUIDv7 ID if none supplied."""
+  """
+  Create or update a single document.
+  If `_id` is omitted, a UUIDv7 ID is automatically generated.
+  If updating an existing document, `_rev` must match the current revision.
+  
+  Example:
+  ```graphql
+  mutation AddMovie {
+    upsertDoc(input: {
+      data: {
+        type: "movie"
+        title: "Oppenheimer"
+        year: 2023
+        director: "Christopher Nolan"
+        rating: 8.9
+      }
+    }) {
+      ok
+      _id
+      _rev
+    }
+  }
+  ```
+  """
   upsertDoc(input: UpsertInput!): MutationResult!
 
-  """Delete a document."""
+  """
+  Delete a document given its `_id` and current `_rev`.
+  
+  Example:
+  ```graphql
+  mutation RemoveDoc {
+    deleteDoc(input: {
+      _id: "018e3a2b-7c10-7e3f-912a-4bc8d5910123"
+      _rev: "1-967a00dff5e02add41819138abb3284d"
+    }) {
+      ok
+      _id
+      _rev
+    }
+  }
+  ```
+  """
   deleteDoc(input: DeleteInput!): MutationResult!
 
-  """Bulk create/update/delete in one CouchDB request."""
+  """
+  Bulk create, update, or delete multiple documents in a single HTTP request.
+  
+  Example:
+  ```graphql
+  mutation BulkInsert {
+    bulkDocs(input: {
+      docs: [
+        { data: { type: "movie", title: "Dune: Part Two", year: 2024 } }
+        { data: { type: "movie", title: "Furiosa", year: 2024 } }
+      ]
+    }) {
+      results {
+        ok
+        _id
+        _rev
+      }
+    }
+  }
+  ```
+  """
   bulkDocs(input: BulkDocsInput!): BulkResult!
 }
 
@@ -163,5 +417,6 @@ type Mutation {
 
 """
 Arbitrary JSON value (object, array, string, number, boolean, or null).
+Maps directly to Go `any` / `map[string]any`.
 """
 scalar Map

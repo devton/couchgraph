@@ -89,7 +89,7 @@ func main() {
 	mux.Handle("/query", srv)
 
 	if cfg.Server.PlaygroundEnabled {
-		mux.Handle("/", playground.Handler("CouchGraph", "/query"))
+		mux.Handle("/", playground.Handler("CouchGraph", "/query", playground.WithGraphiqlEnablePluginExplorer(true)))
 		log.Info("GraphQL Playground enabled",
 			zap.String("url", fmt.Sprintf("http://localhost:%d", cfg.Server.Port)),
 		)
