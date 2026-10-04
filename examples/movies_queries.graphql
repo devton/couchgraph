@@ -1,0 +1,185 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CouchGraph — IMDb Movies Dataset GraphQL Queries
+# Run these in GraphQL Playground (http://localhost:8080) after seeding!
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── 1. MapReduce View: Exact Single Key Match ───────────────────────────────
+# Returns all movies indexed with the exact genre "Drama"
+query MoviesByExactGenre {
+  queryView(input: {
+    designDoc: "movies"
+    viewName: "by_genre"
+    key: "Drama"
+    reduce: false
+  }) {
+    totalRows
+    offset
+    rows {
+      id
+      key
+      value
+    }
+  }
+}
+
+# ── 2. MapReduce View: Multi-Key Lookup (keys array) ─────────────────────────
+# Returns movies matching any of the specified keys in a single request
+query MoviesByMultipleGenres {
+  queryView(input: {
+    designDoc: "movies"
+    viewName: "by_genre"
+    keys: ["Sci-Fi", "Crime"]
+    reduce: false
+  }) {
+    totalRows
+    rows {
+      id
+      key
+      value
+    }
+  }
+}
+
+# ── 3. MapReduce View: Key Range with Full Document Inclusion ───────────────
+# Returns movies released between 1990 and 2005, including full document data
+query MoviesByYearRange {
+  queryView(input: {
+    designDoc: "movies"
+    viewName: "by_year"
+    startKey: 1990
+    endKey: 2005
+    reduce: false
+    includeDocs: true
+  }) {
+    totalRows
+    offset
+    rows {
+      id
+      key
+      value
+      doc {
+        _id
+        _rev
+        data
+      }
+    }
+  }
+}
+
+# ── 4. MapReduce Reduce View: Aggregated Counts Grouped by Genre ─────────────
+# Uses CouchDB built-in '_count' reduce function to count movies per genre
+query MovieCountsGroupedByGenre {
+  queryView(input: {
+    designDoc: "movies"
+    viewName: "by_genre"
+    reduce: true
+    group: true
+  }) {
+    rows {
+      key
+      value
+    }
+  }
+}
+
+# ── 5. MapReduce Reduce View: Box Office Statistics Grouped by Genre ────────
+# Uses CouchDB built-in '_stats' reduce to compute count, min, max, sum, sumsqr
+query BoxOfficeStatsByGenre {
+  queryView(input: {
+    designDoc: "movies"
+    viewName: "box_office_by_genre"
+    reduce: true
+    group: true
+  }) {
+    rows {
+      key
+      value
+    }
+  }
+}
+
+# ── 6. MapReduce Reduce View: Overall Global Ratings Statistics ─────────────
+# Overall rating metrics (min, max, average, total count) across all movies
+query OverallRatingsStats {
+  queryView(input: {
+    designDoc: "movies"
+    viewName: "ratings_stats"
+    reduce: true
+    group: false
+  }) {
+    rows {
+      key
+      value
+    }
+  }
+}
+
+# ── 7. Mango Query (_find): High-Rated Sci-Fi Movies ─────────────────────────
+query FindTopSciFiMovies {
+  findDocs(input: {
+    selector: {
+      type: "movie"
+      genres: { "$in": ["Sci-Fi"] }
+      rating: { "$gte": 8.5 }
+    }
+    sort: [
+      { rating: "desc" }
+    ]
+    limit: 10
+  }) {
+    docs {
+      _id
+      data
+    }
+    bookmark
+  }
+}
+
+# ── 8. Mango Query (_find): Movies by Director Ordered by Year ───────────────
+query FindNolanMovies {
+  findDocs(input: {
+    selector: {
+      type: "movie"
+      director: "Christopher Nolan"
+    }
+    sort: [
+      { year: "desc" }
+    ]
+  }) {
+    docs {
+      _id
+      data
+    }
+  }
+}
+
+# ── 9. Batch Fetch by UUIDv7 IDs (DataLoader with single _bulk_get) ──────────
+query BatchGetMovies($ids: [ID!]!) {
+  documents(ids: $ids) {
+    _id
+    data
+  }
+}
+
+# ── 10. Mutation: Insert a New Movie with Auto UUIDv7 ID ─────────────────────
+mutation AddNewMovie {
+  upsertDoc(input: {
+    data: {
+      type: "movie"
+      title: "Oppenheimer"
+      year: 2023
+      director: "Christopher Nolan"
+      genres: ["Biography", "Drama", "History"]
+      rating: 8.9
+      votes: 750000
+      runtime_minutes: 180
+      cast: ["Cillian Murphy", "Emily Blunt", "Matt Damon", "Robert Downey Jr."]
+      plot: "The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb."
+      box_office_usd: 957000000
+    }
+  }) {
+    ok
+    _id
+    _rev
+  }
+}

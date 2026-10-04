@@ -57,6 +57,9 @@ type LogConfig struct {
 //	COUCHGRAPH_COUCHDB_DATABASE=mydb
 //	COUCHGRAPH_LOG_LEVEL=debug
 func Load() (*Config, error) {
+	// ── Auto-load .env file if present ────────────────────────────────────
+	loadDotEnv()
+
 	v := viper.New()
 
 	// ── Defaults ──────────────────────────────────────────────────────────
@@ -121,4 +124,28 @@ func Load() (*Config, error) {
 	cfg.CouchDB.Database = strings.Trim(strings.TrimSpace(cfg.CouchDB.Database), "\"'`")
 
 	return &cfg, nil
+}
+
+// loadDotEnv reads key-value pairs from a local .env file if it exists and sets
+// them into the process environment without overriding already-set variables.
+func loadDotEnv() {
+	content, err := os.ReadFile(".env")
+	if err != nil {
+		return
+	}
+	for _, line := range strings.Split(string(content), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			val := strings.TrimSpace(parts[1])
+			val = strings.Trim(val, "\"'`")
+			if os.Getenv(key) == "" {
+				_ = os.Setenv(key, val)
+			}
+		}
+	}
 }

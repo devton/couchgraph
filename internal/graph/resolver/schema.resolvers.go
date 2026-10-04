@@ -14,8 +14,6 @@ import (
 	"github.com/ton/couchgraph/internal/graph/model"
 )
 
-// ─── Mutations ───────────────────────────────────────────────────────────────
-
 // UpsertDoc is the resolver for the upsertDoc field.
 func (r *mutationResolver) UpsertDoc(ctx context.Context, input model.UpsertInput) (*model.MutationResult, error) {
 	data, ok := input.Data.(map[string]any)
@@ -77,7 +75,7 @@ func (r *mutationResolver) BulkDocs(ctx context.Context, input model.BulkDocsInp
 	gqlResults := make([]*model.MutationResult, 0, len(results))
 	for _, res := range results {
 		ok, _ := res["ok"].(bool)
-		id, _  := res["_id"].(string)
+		id, _ := res["_id"].(string)
 		rev, _ := res["_rev"].(string)
 		gqlResults = append(gqlResults, &model.MutationResult{
 			Ok:  ok,
@@ -88,8 +86,6 @@ func (r *mutationResolver) BulkDocs(ctx context.Context, input model.BulkDocsInp
 
 	return &model.BulkResult{Results: gqlResults}, nil
 }
-
-// ─── Queries ─────────────────────────────────────────────────────────────────
 
 // Document is the resolver for the document field.
 func (r *queryResolver) Document(ctx context.Context, id string) (*model.Document, error) {
@@ -188,6 +184,8 @@ func (r *queryResolver) QueryView(ctx context.Context, input model.ViewInput) (*
 	opts := couch.ViewOptions{
 		DesignDoc: input.DesignDoc,
 		ViewName:  input.ViewName,
+		Key:       input.Key,
+		Keys:      input.Keys,
 		StartKey:  input.StartKey,
 		EndKey:    input.EndKey,
 	}
@@ -205,6 +203,9 @@ func (r *queryResolver) QueryView(ctx context.Context, input model.ViewInput) (*
 	}
 	if input.Reduce != nil {
 		opts.Reduce = input.Reduce
+	}
+	if input.Group != nil {
+		opts.Group = input.Group
 	}
 	if input.GroupLevel != nil {
 		opts.GroupLevel = input.GroupLevel
@@ -247,8 +248,6 @@ func (r *queryResolver) ServerInfo(ctx context.Context) (any, error) {
 	return r.Repo.ServerInfo(ctx)
 }
 
-// ─── Sub-resolvers ───────────────────────────────────────────────────────────
-
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
@@ -259,25 +258,3 @@ type (
 	mutationResolver struct{ *Resolver }
 	queryResolver    struct{ *Resolver }
 )
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-// rawToDocument converts a raw CouchDB document map to the GraphQL model.
-func rawToDocument(raw map[string]any) *model.Document {
-	id, _  := raw["_id"].(string)
-	rev, _ := raw["_rev"].(string)
-
-	// Strip internal CouchDB fields from the data payload.
-	data := make(map[string]any, len(raw))
-	for k, v := range raw {
-		if k != "_id" && k != "_rev" {
-			data[k] = v
-		}
-	}
-
-	return &model.Document{
-		ID:  id,
-		Rev: rev,
-		Data: data,
-	}
-}

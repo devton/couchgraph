@@ -498,13 +498,22 @@ Input for a CouchDB View query.
 input ViewInput {
   designDoc: String!
   viewName:  String!
+  """Exact single key match (e.g. key: "Action" or key: 2010)."""
+  key:       Map
+  """Multiple exact keys match (e.g. keys: ["Action", "Sci-Fi"])."""
+  keys:      [Map!]
+  """Start of key range (inclusive, or exclusive if descending)."""
   startKey:  Map
+  """End of key range (inclusive)."""
   endKey:    Map
   limit:     Int
   skip:      Int
   descending: Boolean
   includeDocs: Boolean
   reduce:    Boolean
+  """Group by key when reduce is enabled."""
+  group:     Boolean
+  """Group level for array keys in reduce views."""
   groupLevel: Int
 }
 
@@ -3182,7 +3191,7 @@ func (ec *executionContext) unmarshalInputViewInput(ctx context.Context, obj any
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"designDoc", "viewName", "startKey", "endKey", "limit", "skip", "descending", "includeDocs", "reduce", "groupLevel"}
+	fieldsInOrder := [...]string{"designDoc", "viewName", "key", "keys", "startKey", "endKey", "limit", "skip", "descending", "includeDocs", "reduce", "group", "groupLevel"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3203,6 +3212,20 @@ func (ec *executionContext) unmarshalInputViewInput(ctx context.Context, obj any
 				return it, err
 			}
 			it.ViewName = data
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalOMap2interface(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "keys":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keys"))
+			data, err := ec.unmarshalOMap2ᚕinterfaceᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Keys = data
 		case "startKey":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startKey"))
 			data, err := ec.unmarshalOMap2interface(ctx, v)
@@ -3252,6 +3275,13 @@ func (ec *executionContext) unmarshalInputViewInput(ctx context.Context, obj any
 				return it, err
 			}
 			it.Reduce = data
+		case "group":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("group"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Group = data
 		case "groupLevel":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupLevel"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)

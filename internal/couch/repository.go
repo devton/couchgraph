@@ -37,6 +37,8 @@ type FindResult struct {
 type ViewOptions struct {
 	DesignDoc   string
 	ViewName    string
+	Key         any
+	Keys        []any
 	StartKey    any
 	EndKey      any
 	Limit       int
@@ -44,6 +46,7 @@ type ViewOptions struct {
 	Descending  bool
 	IncludeDocs bool
 	Reduce      *bool
+	Group       *bool
 	GroupLevel  *int
 }
 
@@ -258,6 +261,12 @@ func (r *Repository) Find(ctx context.Context, opts FindOptions) (*FindResult, e
 func (r *Repository) QueryView(ctx context.Context, opts ViewOptions) (*ViewResult, error) {
 	var kopts []kivik.Option
 
+	if opts.Key != nil {
+		kopts = append(kopts, kivik.Param("key", opts.Key))
+	}
+	if len(opts.Keys) > 0 {
+		kopts = append(kopts, kivik.Param("keys", opts.Keys))
+	}
 	if opts.StartKey != nil {
 		kopts = append(kopts, kivik.Param("startkey", opts.StartKey))
 	}
@@ -278,6 +287,9 @@ func (r *Repository) QueryView(ctx context.Context, opts ViewOptions) (*ViewResu
 	}
 	if opts.Reduce != nil {
 		kopts = append(kopts, kivik.Param("reduce", *opts.Reduce))
+	}
+	if opts.Group != nil {
+		kopts = append(kopts, kivik.Param("group", *opts.Group))
 	}
 	if opts.GroupLevel != nil {
 		kopts = append(kopts, kivik.Param("group_level", *opts.GroupLevel))
@@ -307,8 +319,16 @@ func (r *Repository) QueryView(ctx context.Context, opts ViewOptions) (*ViewResu
 		return nil, fmt.Errorf("couch: QueryView rows: %w", err)
 	}
 
+	var totalRows, offset int
+	if meta, err := rows.Metadata(); err == nil && meta != nil {
+		totalRows = int(meta.TotalRows)
+		offset = int(meta.Offset)
+	}
+
 	return &ViewResult{
-		Rows: viewRows,
+		Rows:      viewRows,
+		TotalRows: totalRows,
+		Offset:    offset,
 	}, nil
 }
 

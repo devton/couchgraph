@@ -75,16 +75,25 @@ type UpsertInput struct {
 
 // Input for a CouchDB View query.
 type ViewInput struct {
-	DesignDoc   string `json:"designDoc"`
-	ViewName    string `json:"viewName"`
-	StartKey    any    `json:"startKey,omitempty"`
-	EndKey      any    `json:"endKey,omitempty"`
-	Limit       *int   `json:"limit,omitempty"`
-	Skip        *int   `json:"skip,omitempty"`
-	Descending  *bool  `json:"descending,omitempty"`
-	IncludeDocs *bool  `json:"includeDocs,omitempty"`
-	Reduce      *bool  `json:"reduce,omitempty"`
-	GroupLevel  *int   `json:"groupLevel,omitempty"`
+	DesignDoc string `json:"designDoc"`
+	ViewName  string `json:"viewName"`
+	// Exact single key match (e.g. key: "Action" or key: 2010).
+	Key any `json:"key,omitempty"`
+	// Multiple exact keys match (e.g. keys: ["Action", "Sci-Fi"]).
+	Keys []any `json:"keys,omitempty"`
+	// Start of key range (inclusive, or exclusive if descending).
+	StartKey any `json:"startKey,omitempty"`
+	// End of key range (inclusive).
+	EndKey      any   `json:"endKey,omitempty"`
+	Limit       *int  `json:"limit,omitempty"`
+	Skip        *int  `json:"skip,omitempty"`
+	Descending  *bool `json:"descending,omitempty"`
+	IncludeDocs *bool `json:"includeDocs,omitempty"`
+	Reduce      *bool `json:"reduce,omitempty"`
+	// Group by key when reduce is enabled.
+	Group *bool `json:"group,omitempty"`
+	// Group level for array keys in reduce views.
+	GroupLevel *int `json:"groupLevel,omitempty"`
 }
 
 type ViewResult struct {
