@@ -324,6 +324,11 @@ func (r *Repository) QueryView(ctx context.Context, opts ViewOptions) (*ViewResu
 		totalRows = int(meta.TotalRows)
 		offset = int(meta.Offset)
 	}
+	// Reduce views in CouchDB do not return total_rows in their JSON response.
+	// Fall back to the number of returned rows so totalRows is never misleadingly 0 when rows exist.
+	if totalRows == 0 && len(viewRows) > 0 {
+		totalRows = len(viewRows)
+	}
 
 	return &ViewResult{
 		Rows:      viewRows,
