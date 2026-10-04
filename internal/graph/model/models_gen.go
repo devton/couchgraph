@@ -4,58 +4,123 @@ package model
 
 // Input for a bulk write (create/update/delete) operation.
 type BulkDocsInput struct {
+	// List of documents to upsert or delete in a single CouchDB transaction.
 	Docs []*UpsertInput `json:"docs"`
 }
 
 type BulkResult struct {
+	// Array of results for each document in the bulk operation.
 	Results []*MutationResult `json:"results"`
 }
 
 // Input for deleting a document.
 type DeleteInput struct {
-	ID  string `json:"_id"`
+	// ID of the document to delete.
+	ID string `json:"_id"`
+	// Current revision (_rev) of the document to delete.
 	Rev string `json:"_rev"`
+}
+
+// A strongly-typed Director entity demonstrating 1:N reverse relations over CouchDB.
+type Director struct {
+	// Unique UUIDv7 identifier.
+	ID string `json:"id"`
+	// Document discriminator type (always 'director').
+	Type string `json:"type"`
+	// Director full name.
+	Name string `json:"name"`
+	// Year of birth.
+	BirthYear int `json:"birthYear"`
+	// Nationality.
+	Nationality string `json:"nationality"`
+	// Notable works and films.
+	KnownFor []string `json:"knownFor"`
+	// Nested 1:N relation: all movies directed by this person, resolved efficiently via CouchDB View.
+	Movies []*Movie `json:"movies"`
 }
 
 // A raw JSON document stored in CouchDB.
 // Fields _id and _rev are always present on fetched documents.
 type Document struct {
-	ID  string `json:"_id"`
+	// Document unique identifier (UUIDv7 format recommended).
+	ID string `json:"_id"`
+	// CouchDB document revision token.
 	Rev string `json:"_rev"`
 	// The remaining fields of the document as a raw JSON map.
-	// Use typed queries (via future schema extensions) for strongly-typed access.
+	// Arbitrary JSON key-value pairs stored in the document.
 	Data any `json:"data"`
 }
 
 // Input for a Mango selector query (_find).
 type FindInput struct {
-	// JSON-encoded Mango selector, e.g. {"type": "user"}
+	// JSON-encoded Mango selector.
+	// Examples:
+	//   {"type": "movie", "rating": {"$gte": 8.5}}
+	//   {"type": "movie", "genres": {"$in": ["Sci-Fi"]}}
 	Selector any `json:"selector"`
-	// Fields to return (projection). Empty means return all fields.
+	// Fields to return (projection). Empty means return all document fields.
 	Fields []string `json:"fields,omitempty"`
-	// Sort descriptors, e.g. [{"name": "asc"}]
-	Sort  []any `json:"sort,omitempty"`
-	Limit *int  `json:"limit,omitempty"`
-	Skip  *int  `json:"skip,omitempty"`
+	// Sort descriptors, e.g. [{"rating": "desc"}, {"year": "asc"}]
+	// Requires an appropriate Mango index in CouchDB matching the sort order.
+	Sort []any `json:"sort,omitempty"`
+	// Maximum number of documents to return.
+	Limit *int `json:"limit,omitempty"`
+	// Number of documents to skip before returning.
+	Skip *int `json:"skip,omitempty"`
 	// Opaque bookmark from a previous FindResult for cursor pagination.
 	Bookmark *string `json:"bookmark,omitempty"`
 }
 
 // Result of a Mango _find query.
 type FindResult struct {
+	// Matching documents returned by the selector.
 	Docs []*Document `json:"docs"`
 	// Opaque bookmark for cursor-based pagination (pass to next findDocs call).
 	Bookmark *string `json:"bookmark,omitempty"`
-	// Warning message from CouchDB if the query used a slow index.
+	// Warning message from CouchDB if the query used an unindexed or slow scan.
 	Warning *string `json:"warning,omitempty"`
+}
+
+// A strongly-typed Movie entity demonstrating domain modeling and nested relations over CouchDB.
+type Movie struct {
+	// Unique UUIDv7 identifier.
+	ID string `json:"id"`
+	// Document discriminator type (always 'movie').
+	Type string `json:"type"`
+	// Movie title.
+	Title string `json:"title"`
+	// Release year.
+	Year int `json:"year"`
+	// IMDb rating (e.g. 9.3).
+	Rating float64 `json:"rating"`
+	// Total IMDb user votes.
+	Votes int `json:"votes"`
+	// Runtime in minutes.
+	RuntimeMinutes int `json:"runtimeMinutes"`
+	// List of genres.
+	Genres []string `json:"genres"`
+	// Lead actors and cast.
+	Cast []string `json:"cast"`
+	// Plot summary.
+	Plot string `json:"plot"`
+	// Worldwide box office in USD.
+	BoxOfficeUsd *int `json:"boxOfficeUsd,omitempty"`
+	// Foreign key ID referencing the Director document.
+	DirectorID *string `json:"directorId,omitempty"`
+	// Nested 1:1 relation resolved via CouchGraph's DataLoader (`_bulk_get` batching).
+	// Zero N+1 database queries!
+	Director *Director `json:"director,omitempty"`
 }
 
 type Mutation struct {
 }
 
 type MutationResult struct {
-	Ok  bool   `json:"ok"`
-	ID  string `json:"_id"`
+	// Whether the mutation succeeded.
+	Ok bool `json:"ok"`
+	// The document ID.
+	ID string `json:"_id"`
+	// The new document revision token.
 	Rev string `json:"_rev"`
 }
 
@@ -64,7 +129,7 @@ type Query struct {
 
 // Input for creating or replacing a document.
 type UpsertInput struct {
-	// Optional document ID. If omitted, a new UUIDv7 ID is generated.
+	// Optional document ID. If omitted, a new UUIDv7 ID is automatically generated.
 	// If the document already exists, _rev must be provided to update it.
 	ID *string `json:"_id,omitempty"`
 	// Required when updating an existing document.
@@ -73,39 +138,56 @@ type UpsertInput struct {
 	Data any `json:"data"`
 }
 
-// Input for a CouchDB View query.
+// Input for a CouchDB View query (_design/{designDoc}/_view/{viewName}).
 type ViewInput struct {
+	// Design document name without the '_design/' prefix (e.g. 'movies').
 	DesignDoc string `json:"designDoc"`
-	ViewName  string `json:"viewName"`
-	// Exact single key match (e.g. key: "Action" or key: 2010).
+	// View name defined inside the design document (e.g. 'by_genre', 'top_rated').
+	ViewName string `json:"viewName"`
+	// Exact single key match (e.g. key: "Drama" or key: 1994).
 	Key any `json:"key,omitempty"`
-	// Multiple exact keys match (e.g. keys: ["Action", "Sci-Fi"]).
+	// Multiple exact keys match in one request (e.g. keys: ["Action", "Sci-Fi"]).
 	Keys []any `json:"keys,omitempty"`
 	// Start of key range (inclusive, or exclusive if descending).
 	StartKey any `json:"startKey,omitempty"`
 	// End of key range (inclusive).
-	EndKey      any   `json:"endKey,omitempty"`
-	Limit       *int  `json:"limit,omitempty"`
-	Skip        *int  `json:"skip,omitempty"`
-	Descending  *bool `json:"descending,omitempty"`
+	EndKey any `json:"endKey,omitempty"`
+	// Limit number of rows returned.
+	Limit *int `json:"limit,omitempty"`
+	// Number of rows to skip.
+	Skip *int `json:"skip,omitempty"`
+	// Reverse result order.
+	Descending *bool `json:"descending,omitempty"`
+	// Include full CouchDB document body in each row under the 'doc' field.
 	IncludeDocs *bool `json:"includeDocs,omitempty"`
-	Reduce      *bool `json:"reduce,omitempty"`
-	// Group by key when reduce is enabled.
+	// Enable or disable reduce function.
+	// Set to false to retrieve raw map rows even if view defines a reduce function.
+	Reduce *bool `json:"reduce,omitempty"`
+	// Group by exact key when reduce is enabled.
+	// Example: group: true with reduce: true calculates aggregate per key.
 	Group *bool `json:"group,omitempty"`
-	// Group level for array keys in reduce views.
+	// Group level for array keys in reduce views (e.g. [year, month]).
 	GroupLevel *int `json:"groupLevel,omitempty"`
 }
 
+// Result of querying a CouchDB MapReduce View.
 type ViewResult struct {
-	Rows      []*ViewRow `json:"rows"`
-	TotalRows int        `json:"totalRows"`
-	Offset    int        `json:"offset"`
+	// Array of emitted or reduced view rows.
+	Rows []*ViewRow `json:"rows"`
+	// Total rows in the view index (or total returned rows in reduce queries).
+	TotalRows int `json:"totalRows"`
+	// Starting row offset within the view index.
+	Offset int `json:"offset"`
 }
 
-// Result of a CouchDB View (_design/_view) query.
+// A single row in a CouchDB View (_design/_view) result.
 type ViewRow struct {
-	ID    *string   `json:"id,omitempty"`
-	Key   any       `json:"key,omitempty"`
-	Value any       `json:"value,omitempty"`
-	Doc   *Document `json:"doc,omitempty"`
+	// Document ID emitted by the map function (null for reduced rows).
+	ID *string `json:"id,omitempty"`
+	// The key emitted by the map function or grouping key in reduce.
+	Key any `json:"key,omitempty"`
+	// The value emitted by the map function or the aggregated reduce value.
+	Value any `json:"value,omitempty"`
+	// The full document if includeDocs was set to true.
+	Doc *Document `json:"doc,omitempty"`
 }

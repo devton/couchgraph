@@ -49,6 +49,7 @@
 
 ---
 
-## Runbooks
+## Runbooks & Architecture Guides
+- [`docs/relations-and-domain-modeling.md`](file:///Users/ton/work/couchgraph/docs/relations-and-domain-modeling.md) — Relations, domain modeling, and virtual collections guide
 - [`docs/runbooks/agent-role-system.md`](file:///Users/ton/work/couchgraph/docs/runbooks/agent-role-system.md) — Operational execution playbook
 - [`docs/runbooks/plan-to-blueprint.md`](file:///Users/ton/work/couchgraph/docs/runbooks/plan-to-blueprint.md) — Plan-to-blueprint transformation

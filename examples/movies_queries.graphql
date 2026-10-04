@@ -1,9 +1,60 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# CouchGraph — IMDb Movies Dataset GraphQL Queries
+# CouchGraph — IMDb Movies Dataset GraphQL Queries & Relational Examples
 # Run these in GraphQL Playground (http://localhost:8080) after seeding!
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ── 1. MapReduce View: Exact Single Key Match ───────────────────────────────
+# ── 1. Typed Relational Query: 1:1 Nested Director Join via DataLoader ──────
+# Resolves movies and batches all Director foreign key lookups into _bulk_get
+query MoviesWithNestedDirectors {
+  movies(minRating: 8.8, limit: 5) {
+    id
+    title
+    year
+    rating
+    genres
+    director {
+      id
+      name
+      nationality
+      birthYear
+    }
+  }
+}
+
+# ── 2. Typed Relational Query: 1:N Reverse Filmography via View ─────────────
+# Resolves directors and their full list of directed movies via 'by_director_id' view
+query DirectorsWithFilmography {
+  directors {
+    id
+    name
+    nationality
+    knownFor
+    movies {
+      id
+      title
+      year
+      rating
+      boxOfficeUsd
+    }
+  }
+}
+
+# ── 3. Typed Single Document by UUIDv7 ID with Nested Relation ──────────────
+query SingleMovieWithDirector($id: ID!) {
+  movie(id: $id) {
+    title
+    year
+    rating
+    plot
+    cast
+    director {
+      name
+      nationality
+    }
+  }
+}
+
+# ── 4. MapReduce View: Exact Single Key Match ───────────────────────────────
 # Returns all movies indexed with the exact genre "Drama"
 query MoviesByExactGenre {
   queryView(input: {
@@ -22,7 +73,7 @@ query MoviesByExactGenre {
   }
 }
 
-# ── 2. MapReduce View: Multi-Key Lookup (keys array) ─────────────────────────
+# ── 5. MapReduce View: Multi-Key Lookup (keys array) ─────────────────────────
 # Returns movies matching any of the specified keys in a single request
 query MoviesByMultipleGenres {
   queryView(input: {
@@ -40,7 +91,7 @@ query MoviesByMultipleGenres {
   }
 }
 
-# ── 3. MapReduce View: Key Range with Full Document Inclusion ───────────────
+# ── 6. MapReduce View: Key Range with Full Document Inclusion ───────────────
 # Returns movies released between 1990 and 2005, including full document data
 query MoviesByYearRange {
   queryView(input: {
@@ -66,7 +117,7 @@ query MoviesByYearRange {
   }
 }
 
-# ── 4. MapReduce Reduce View: Aggregated Counts Grouped by Genre ─────────────
+# ── 7. MapReduce Reduce View: Aggregated Counts Grouped by Genre ─────────────
 # Uses CouchDB built-in '_count' reduce function to count movies per genre
 query MovieCountsGroupedByGenre {
   queryView(input: {
@@ -75,6 +126,7 @@ query MovieCountsGroupedByGenre {
     reduce: true
     group: true
   }) {
+    totalRows
     rows {
       key
       value
@@ -82,7 +134,7 @@ query MovieCountsGroupedByGenre {
   }
 }
 
-# ── 5. MapReduce Reduce View: Box Office Statistics Grouped by Genre ────────
+# ── 8. MapReduce Reduce View: Box Office Statistics Grouped by Genre ────────
 # Uses CouchDB built-in '_stats' reduce to compute count, min, max, sum, sumsqr
 query BoxOfficeStatsByGenre {
   queryView(input: {
@@ -91,6 +143,7 @@ query BoxOfficeStatsByGenre {
     reduce: true
     group: true
   }) {
+    totalRows
     rows {
       key
       value
@@ -98,7 +151,7 @@ query BoxOfficeStatsByGenre {
   }
 }
 
-# ── 6. MapReduce Reduce View: Overall Global Ratings Statistics ─────────────
+# ── 9. MapReduce Reduce View: Overall Global Ratings Statistics ─────────────
 # Overall rating metrics (min, max, average, total count) across all movies
 query OverallRatingsStats {
   queryView(input: {
@@ -107,6 +160,7 @@ query OverallRatingsStats {
     reduce: true
     group: false
   }) {
+    totalRows
     rows {
       key
       value
@@ -114,7 +168,7 @@ query OverallRatingsStats {
   }
 }
 
-# ── 7. Mango Query (_find): High-Rated Sci-Fi Movies ─────────────────────────
+# ── 10. Mango Query (_find): High-Rated Sci-Fi Movies ────────────────────────
 query FindTopSciFiMovies {
   findDocs(input: {
     selector: {
@@ -135,25 +189,7 @@ query FindTopSciFiMovies {
   }
 }
 
-# ── 8. Mango Query (_find): Movies by Director Ordered by Year ───────────────
-query FindNolanMovies {
-  findDocs(input: {
-    selector: {
-      type: "movie"
-      director: "Christopher Nolan"
-    }
-    sort: [
-      { year: "desc" }
-    ]
-  }) {
-    docs {
-      _id
-      data
-    }
-  }
-}
-
-# ── 9. Batch Fetch by UUIDv7 IDs (DataLoader with single _bulk_get) ──────────
+# ── 11. Batch Fetch by UUIDv7 IDs (DataLoader with single _bulk_get) ─────────
 query BatchGetMovies($ids: [ID!]!) {
   documents(ids: $ids) {
     _id
@@ -161,13 +197,14 @@ query BatchGetMovies($ids: [ID!]!) {
   }
 }
 
-# ── 10. Mutation: Insert a New Movie with Auto UUIDv7 ID ─────────────────────
+# ── 12. Mutation: Insert a New Movie with Auto UUIDv7 ID ────────────────────
 mutation AddNewMovie {
   upsertDoc(input: {
     data: {
       type: "movie"
       title: "Oppenheimer"
       year: 2023
+      director_id: "01a107be-6492-7538-8ed8-8262766ca648"
       director: "Christopher Nolan"
       genres: ["Biography", "Drama", "History"]
       rating: 8.9

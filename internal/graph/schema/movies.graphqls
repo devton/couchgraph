@@ -1,0 +1,157 @@
+"""
+A strongly-typed Movie entity demonstrating domain modeling and nested relations over CouchDB.
+"""
+type Movie {
+  """Unique UUIDv7 identifier."""
+  id: ID!
+
+  """Document discriminator type (always 'movie')."""
+  type: String!
+
+  """Movie title."""
+  title: String!
+
+  """Release year."""
+  year: Int!
+
+  """IMDb rating (e.g. 9.3)."""
+  rating: Float!
+
+  """Total IMDb user votes."""
+  votes: Int!
+
+  """Runtime in minutes."""
+  runtimeMinutes: Int!
+
+  """List of genres."""
+  genres: [String!]!
+
+  """Lead actors and cast."""
+  cast: [String!]!
+
+  """Plot summary."""
+  plot: String!
+
+  """Worldwide box office in USD."""
+  boxOfficeUsd: Int
+
+  """Foreign key ID referencing the Director document."""
+  directorId: ID
+
+  """
+  Nested 1:1 relation resolved via CouchGraph's DataLoader (`_bulk_get` batching).
+  Zero N+1 database queries!
+  """
+  director: Director
+}
+
+"""
+A strongly-typed Director entity demonstrating 1:N reverse relations over CouchDB.
+"""
+type Director {
+  """Unique UUIDv7 identifier."""
+  id: ID!
+
+  """Document discriminator type (always 'director')."""
+  type: String!
+
+  """Director full name."""
+  name: String!
+
+  """Year of birth."""
+  birthYear: Int!
+
+  """Nationality."""
+  nationality: String!
+
+  """Notable works and films."""
+  knownFor: [String!]!
+
+  """
+  Nested 1:N relation: all movies directed by this person, resolved efficiently via CouchDB View.
+  """
+  movies: [Movie!]!
+}
+
+extend type Query {
+  """
+  Fetch a single Movie by its UUIDv7 ID with automatic relation resolution.
+
+  Example:
+  ```graphql
+  query GetMovieWithDirector {
+    movie(id: "018e3a2b-7c10-7e3f-912a-4bc8d5910123") {
+      id
+      title
+      year
+      rating
+      director {
+        name
+        nationality
+      }
+    }
+  }
+  ```
+  """
+  movie(id: ID!): Movie
+
+  """
+  List movies with optional filtering by genre, minimum rating, and limit.
+  Demonstrates how a GraphQL collection query maps to a CouchDB MapReduce View or Mango index.
+
+  Example:
+  ```graphql
+  query TopMoviesWithDirectors {
+    movies(minRating: 8.8, limit: 5) {
+      title
+      rating
+      director {
+        name
+        birthYear
+      }
+    }
+  }
+  ```
+  """
+  movies(genre: String, minRating: Float, limit: Int): [Movie!]!
+
+  """
+  Fetch a single Director by UUIDv7 ID and include their full filmography.
+
+  Example:
+  ```graphql
+  query GetDirectorFilms {
+    director(id: "018e3a2b-7c10-7e3f-912a-4bc8d5910999") {
+      name
+      nationality
+      movies {
+        title
+        year
+        rating
+      }
+    }
+  }
+  ```
+  """
+  director(id: ID!): Director
+
+  """
+  List all directors and cross-reference all their directed movies in a single query.
+
+  Example:
+  ```graphql
+  query AllDirectorsAndMovies {
+    directors {
+      name
+      nationality
+      movies {
+        title
+        year
+        rating
+      }
+    }
+  }
+  ```
+  """
+  directors: [Director!]!
+}

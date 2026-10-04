@@ -18,8 +18,16 @@ resolver:
   package: resolver
   filename_template: "{name}.resolvers.go"
 
-# Map the "Map" scalar to Go's any type
+# Map the "Map" scalar to Go's any type and enable relation resolvers
 models:
+  Movie:
+    fields:
+      director:
+        resolver: true
+  Director:
+    fields:
+      movies:
+        resolver: true
   Map:
     model:
       - github.com/ton/couchgraph/internal/graph/scalar.Map

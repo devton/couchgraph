@@ -24,6 +24,7 @@ type Movie struct {
 	Type           string   `json:"type"`
 	Title          string   `json:"title"`
 	Year           int      `json:"year"`
+	DirectorID     string   `json:"director_id"`
 	Director       string   `json:"director"`
 	Genres         []string `json:"genres"`
 	Rating         float64  `json:"rating"`
@@ -86,22 +87,117 @@ func main() {
 	}
 	repo := couch.NewRepository(client)
 
+	// Clean up previous seed documents to maintain clean relations
+	if res, err := repo.Find(ctx, couch.FindOptions{
+		Selector: map[string]any{"type": map[string]any{"$in": []string{"movie", "director"}}},
+		Fields:   []string{"_id", "_rev"},
+		Limit:    1000,
+	}); err == nil && len(res.Docs) > 0 {
+		var deleteDocs []map[string]any
+		for _, d := range res.Docs {
+			deleteDocs = append(deleteDocs, map[string]any{
+				"_id":      d["_id"],
+				"_rev":     d["_rev"],
+				"_deleted": true,
+			})
+		}
+		_, _ = repo.BulkDocs(ctx, deleteDocs)
+	}
+
 	// ── 3. Create Mango Indexes ───────────────────────────────────────────
 	logger.Info("Creating Mango indexes for movies...")
 	createIndex(ctx, cfg, "idx_movies_genre_rating", []string{"type", "genres", "rating", "year"})
 	createIndex(ctx, cfg, "idx_movies_director_year", []string{"type", "director", "year"})
+	createIndex(ctx, cfg, "idx_movies_director_id", []string{"type", "director_id"})
 
 	// ── 4. Create MapReduce Views ─────────────────────────────────────────
 	logger.Info("Creating MapReduce design document (_design/movies)...")
 	createDesignDoc(ctx, cfg)
 
 	// ── 5. Dataset Definition (IMDb Top Classics) ─────────────────────────
+	nolanID := mustUUIDv7()
+	tarantinoID := mustUUIDv7()
+	miyazakiID := mustUUIDv7()
+	scorseseID := mustUUIDv7()
+	darabontID := mustUUIDv7()
+	coppolaID := mustUUIDv7()
+	wachowskiID := mustUUIDv7()
+	bongID := mustUUIDv7()
+
+	directors := []Director{
+		{
+			ID:          nolanID,
+			Type:        "director",
+			Name:        "Christopher Nolan",
+			BirthYear:   1970,
+			Nationality: "British-American",
+			KnownFor:    []string{"Inception", "The Dark Knight", "Interstellar", "Oppenheimer"},
+		},
+		{
+			ID:          tarantinoID,
+			Type:        "director",
+			Name:        "Quentin Tarantino",
+			BirthYear:   1963,
+			Nationality: "American",
+			KnownFor:    []string{"Pulp Fiction", "Kill Bill", "Inglourious Basterds"},
+		},
+		{
+			ID:          miyazakiID,
+			Type:        "director",
+			Name:        "Hayao Miyazaki",
+			BirthYear:   1941,
+			Nationality: "Japanese",
+			KnownFor:    []string{"Spirited Away", "Princess Mononoke", "My Neighbor Totoro"},
+		},
+		{
+			ID:          scorseseID,
+			Type:        "director",
+			Name:        "Martin Scorsese",
+			BirthYear:   1942,
+			Nationality: "American",
+			KnownFor:    []string{"Goodfellas", "Taxi Driver", "The Wolf of Wall Street"},
+		},
+		{
+			ID:          darabontID,
+			Type:        "director",
+			Name:        "Frank Darabont",
+			BirthYear:   1959,
+			Nationality: "French-American",
+			KnownFor:    []string{"The Shawshank Redemption", "The Green Mile"},
+		},
+		{
+			ID:          coppolaID,
+			Type:        "director",
+			Name:        "Francis Ford Coppola",
+			BirthYear:   1939,
+			Nationality: "American",
+			KnownFor:    []string{"The Godfather", "Apocalypse Now"},
+		},
+		{
+			ID:          wachowskiID,
+			Type:        "director",
+			Name:        "Lana & Lilly Wachowski",
+			BirthYear:   1965,
+			Nationality: "American",
+			KnownFor:    []string{"The Matrix", "V for Vendetta", "Cloud Atlas"},
+		},
+		{
+			ID:          bongID,
+			Type:        "director",
+			Name:        "Bong Joon Ho",
+			BirthYear:   1969,
+			Nationality: "South Korean",
+			KnownFor:    []string{"Parasite", "Snowpiercer", "Memories of Murder"},
+		},
+	}
+
 	movies := []Movie{
 		{
 			ID:             mustUUIDv7(),
 			Type:           "movie",
 			Title:          "The Shawshank Redemption",
 			Year:           1994,
+			DirectorID:     darabontID,
 			Director:       "Frank Darabont",
 			Genres:         []string{"Drama"},
 			Rating:         9.3,
@@ -116,6 +212,7 @@ func main() {
 			Type:           "movie",
 			Title:          "The Godfather",
 			Year:           1972,
+			DirectorID:     coppolaID,
 			Director:       "Francis Ford Coppola",
 			Genres:         []string{"Crime", "Drama"},
 			Rating:         9.2,
@@ -130,6 +227,7 @@ func main() {
 			Type:           "movie",
 			Title:          "The Dark Knight",
 			Year:           2008,
+			DirectorID:     nolanID,
 			Director:       "Christopher Nolan",
 			Genres:         []string{"Action", "Crime", "Drama", "Thriller"},
 			Rating:         9.0,
@@ -144,6 +242,7 @@ func main() {
 			Type:           "movie",
 			Title:          "Pulp Fiction",
 			Year:           1994,
+			DirectorID:     tarantinoID,
 			Director:       "Quentin Tarantino",
 			Genres:         []string{"Crime", "Drama"},
 			Rating:         8.9,
@@ -158,6 +257,7 @@ func main() {
 			Type:           "movie",
 			Title:          "Inception",
 			Year:           2010,
+			DirectorID:     nolanID,
 			Director:       "Christopher Nolan",
 			Genres:         []string{"Action", "Adventure", "Sci-Fi", "Thriller"},
 			Rating:         8.8,
@@ -172,6 +272,7 @@ func main() {
 			Type:           "movie",
 			Title:          "Interstellar",
 			Year:           2014,
+			DirectorID:     nolanID,
 			Director:       "Christopher Nolan",
 			Genres:         []string{"Adventure", "Drama", "Sci-Fi"},
 			Rating:         8.7,
@@ -186,7 +287,8 @@ func main() {
 			Type:           "movie",
 			Title:          "The Matrix",
 			Year:           1999,
-			Director:       "Lana Wachowski, Lilly Wachowski",
+			DirectorID:     wachowskiID,
+			Director:       "Lana & Lilly Wachowski",
 			Genres:         []string{"Action", "Sci-Fi"},
 			Rating:         8.7,
 			Votes:          1980000,
@@ -200,6 +302,7 @@ func main() {
 			Type:           "movie",
 			Title:          "Goodfellas",
 			Year:           1990,
+			DirectorID:     scorseseID,
 			Director:       "Martin Scorsese",
 			Genres:         []string{"Biography", "Crime", "Drama"},
 			Rating:         8.7,
@@ -214,6 +317,7 @@ func main() {
 			Type:           "movie",
 			Title:          "Spirited Away",
 			Year:           2001,
+			DirectorID:     miyazakiID,
 			Director:       "Hayao Miyazaki",
 			Genres:         []string{"Animation", "Adventure", "Family", "Fantasy"},
 			Rating:         8.6,
@@ -228,6 +332,7 @@ func main() {
 			Type:           "movie",
 			Title:          "Parasite",
 			Year:           2019,
+			DirectorID:     bongID,
 			Director:       "Bong Joon Ho",
 			Genres:         []string{"Drama", "Thriller"},
 			Rating:         8.5,
@@ -236,41 +341,6 @@ func main() {
 			Cast:           []string{"Song Kang-ho", "Lee Sun-kyun", "Cho Yeo-jeong", "Choi Woo-shik"},
 			Plot:           "Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.",
 			BoxOfficeUSD:   263100000,
-		},
-	}
-
-	directors := []Director{
-		{
-			ID:          mustUUIDv7(),
-			Type:        "director",
-			Name:        "Christopher Nolan",
-			BirthYear:   1970,
-			Nationality: "British-American",
-			KnownFor:    []string{"Inception", "The Dark Knight", "Interstellar", "Oppenheimer"},
-		},
-		{
-			ID:          mustUUIDv7(),
-			Type:        "director",
-			Name:        "Quentin Tarantino",
-			BirthYear:   1963,
-			Nationality: "American",
-			KnownFor:    []string{"Pulp Fiction", "Kill Bill", "Inglourious Basterds"},
-		},
-		{
-			ID:          mustUUIDv7(),
-			Type:        "director",
-			Name:        "Hayao Miyazaki",
-			BirthYear:   1941,
-			Nationality: "Japanese",
-			KnownFor:    []string{"Spirited Away", "Princess Mononoke", "My Neighbor Totoro"},
-		},
-		{
-			ID:          mustUUIDv7(),
-			Type:        "director",
-			Name:        "Martin Scorsese",
-			BirthYear:   1942,
-			Nationality: "American",
-			KnownFor:    []string{"Goodfellas", "Taxi Driver", "The Wolf of Wall Street"},
 		},
 	}
 
@@ -312,8 +382,9 @@ func main() {
 
 	fmt.Printf("\n🎬 IMDb Dataset seeded into CouchDB (%s)!\n", cfg.CouchDB.Database)
 	fmt.Printf("   • %d Movies & %d Directors inserted with UUIDv7 IDs\n", len(movies), len(directors))
-	fmt.Printf("   • Mango Indexes created: idx_movies_genre_rating, idx_movies_director_year\n")
-	fmt.Printf("   • MapReduce Views created: _design/movies/_view/by_genre, _design/movies/_view/by_year, _design/movies/_view/top_rated\n")
+	fmt.Printf("   • Foreign keys (director_id) linked across documents\n")
+	fmt.Printf("   • Mango Indexes created: idx_movies_genre_rating, idx_movies_director_year, idx_movies_director_id\n")
+	fmt.Printf("   • MapReduce Views created: _design/movies (by_genre, by_year, top_rated, ratings_stats, box_office_by_genre, all_movies, all_directors, by_director_id)\n")
 	fmt.Printf("   • Open http://localhost:%d to test with GraphQL Playground!\n\n", cfg.Server.Port)
 }
 
@@ -410,6 +481,27 @@ func createDesignDoc(ctx context.Context, cfg *config.Config) {
 					}
 				}`,
 				"reduce": "_stats",
+			},
+			"all_movies": map[string]string{
+				"map": `function (doc) {
+					if (doc.type === "movie") {
+						emit(doc._id, doc);
+					}
+				}`,
+			},
+			"all_directors": map[string]string{
+				"map": `function (doc) {
+					if (doc.type === "director") {
+						emit(doc._id, doc);
+					}
+				}`,
+			},
+			"by_director_id": map[string]string{
+				"map": `function (doc) {
+					if (doc.type === "movie" && doc.director_id) {
+						emit(doc.director_id, doc);
+					}
+				}`,
 			},
 		},
 	}
