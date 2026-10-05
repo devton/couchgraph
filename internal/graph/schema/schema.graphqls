@@ -413,6 +413,49 @@ type Mutation {
   bulkDocs(input: BulkDocsInput!): BulkResult!
 }
 
+# ─── Subscriptions ──────────────────────────────────────────────────────────
+
+"""
+A document change notification emitted in real-time from CouchDB's _changes feed.
+"""
+type DocumentChange {
+  """Document unique identifier."""
+  id: ID!
+
+  """CouchDB change sequence token."""
+  seq: String!
+
+  """True if the document was deleted."""
+  deleted: Boolean!
+
+  """The document payload at this change revision, if available."""
+  doc: Document
+}
+
+type Subscription {
+  """
+  Stream real-time document modifications, creations, and deletions from CouchDB's _changes feed.
+  Optionally filter by a list of document IDs.
+  
+  Example:
+  ```graphql
+  subscription OnDatabaseChanges {
+    docChanges {
+      id
+      seq
+      deleted
+      doc {
+        _id
+        _rev
+        data
+      }
+    }
+  }
+  ```
+  """
+  docChanges(docIds: [ID!]): DocumentChange!
+}
+
 # ─── Scalars ────────────────────────────────────────────────────────────────
 
 """

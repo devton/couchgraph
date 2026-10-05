@@ -51,6 +51,18 @@ type Document struct {
 	Data any `json:"data"`
 }
 
+// A document change notification emitted in real-time from CouchDB's _changes feed.
+type DocumentChange struct {
+	// Document unique identifier.
+	ID string `json:"id"`
+	// CouchDB change sequence token.
+	Seq string `json:"seq"`
+	// True if the document was deleted.
+	Deleted bool `json:"deleted"`
+	// The document payload at this change revision, if available.
+	Doc *Document `json:"doc,omitempty"`
+}
+
 // Input for a Mango selector query (_find).
 type FindInput struct {
 	// JSON-encoded Mango selector.
@@ -125,6 +137,9 @@ type MutationResult struct {
 }
 
 type Query struct {
+}
+
+type Subscription struct {
 }
 
 // Input for creating or replacing a document.

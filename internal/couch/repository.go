@@ -360,6 +360,58 @@ func (r *Repository) ServerInfo(ctx context.Context) (map[string]any, error) {
 	}, nil
 }
 
+// ─── Real-Time Changes Streaming (_changes) ────────────────────────────────
+
+// ChangeEvent represents a single document change emitted by CouchDB _changes feed.
+type ChangeEvent struct {
+	ID      string
+	Seq     string
+	Deleted bool
+	Doc     map[string]any
+}
+
+// SubscribeChanges opens a real-time continuous _changes stream from CouchDB.
+// The returned channel receives ChangeEvents until ctx is cancelled.
+func (r *Repository) SubscribeChanges(ctx context.Context, since string) (<-chan ChangeEvent, error) {
+	if since == "" {
+		since = "now"
+	}
+
+	ch := make(chan ChangeEvent, 32)
+
+	go func() {
+		defer close(ch)
+
+		changes := r.client.DB().Changes(ctx,
+			kivik.Param("feed", "continuous"),
+			kivik.Param("since", since),
+			kivik.Param("include_docs", true),
+			kivik.Param("heartbeat", 10000),
+		)
+		defer changes.Close()
+
+		for changes.Next() {
+			var doc map[string]any
+			_ = changes.ScanDoc(&doc)
+
+			event := ChangeEvent{
+				ID:      changes.ID(),
+				Seq:     changes.Seq(),
+				Deleted: changes.Deleted(),
+				Doc:     doc,
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- event:
+			}
+		}
+	}()
+
+	return ch, nil
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 // docsFromIDs converts a slice of IDs into the format Kivik expects for BulkGet.

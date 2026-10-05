@@ -34,6 +34,7 @@ type ResolverRoot interface {
 	Movie() MovieResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
@@ -58,6 +59,13 @@ type ComplexityRoot struct {
 		Data func(childComplexity int) int
 		ID   func(childComplexity int) int
 		Rev  func(childComplexity int) int
+	}
+
+	DocumentChange struct {
+		Deleted func(childComplexity int) int
+		Doc     func(childComplexity int) int
+		ID      func(childComplexity int) int
+		Seq     func(childComplexity int) int
 	}
 
 	FindResult struct {
@@ -108,6 +116,10 @@ type ComplexityRoot struct {
 		__resolve__service func(childComplexity int) int
 	}
 
+	Subscription struct {
+		DocChanges func(childComplexity int, docIds []string) int
+	}
+
 	ViewResult struct {
 		Offset    func(childComplexity int) int
 		Rows      func(childComplexity int) int
@@ -152,6 +164,9 @@ type QueryResolver interface {
 	Movies(ctx context.Context, genre *string, minRating *float64, limit *int) ([]*model.Movie, error)
 	Director(ctx context.Context, id string) (*model.Director, error)
 	Directors(ctx context.Context) ([]*model.Director, error)
+}
+type SubscriptionResolver interface {
+	DocChanges(ctx context.Context, docIds []string) (<-chan *model.DocumentChange, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -240,6 +255,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Document.Rev(childComplexity), true
+
+	case "DocumentChange.deleted":
+		if e.ComplexityRoot.DocumentChange.Deleted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DocumentChange.Deleted(childComplexity), true
+	case "DocumentChange.doc":
+		if e.ComplexityRoot.DocumentChange.Doc == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DocumentChange.Doc(childComplexity), true
+	case "DocumentChange.id":
+		if e.ComplexityRoot.DocumentChange.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DocumentChange.ID(childComplexity), true
+	case "DocumentChange.seq":
+		if e.ComplexityRoot.DocumentChange.Seq == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DocumentChange.Seq(childComplexity), true
 
 	case "FindResult.bookmark":
 		if e.ComplexityRoot.FindResult.Bookmark == nil {
@@ -495,6 +535,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.__resolve__service(childComplexity), true
 
+	case "Subscription.docChanges":
+		if e.ComplexityRoot.Subscription.DocChanges == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_docChanges_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Subscription.DocChanges(childComplexity, args["docIds"].([]string)), true
+
 	case "ViewResult.offset":
 		if e.ComplexityRoot.ViewResult.Offset == nil {
 			break
@@ -602,6 +654,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
 			data := ec._Mutation(ctx, opCtx.Operation.SelectionSet)
 			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, opCtx.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next(ctx)
+
+			if data == nil {
+				return nil
+			}
 			data.MarshalGQL(&buf)
 
 			return &graphql.Response{
@@ -1207,6 +1276,49 @@ type Mutation {
   bulkDocs(input: BulkDocsInput!): BulkResult!
 }
 
+# ─── Subscriptions ──────────────────────────────────────────────────────────
+
+"""
+A document change notification emitted in real-time from CouchDB's _changes feed.
+"""
+type DocumentChange {
+  """Document unique identifier."""
+  id: ID!
+
+  """CouchDB change sequence token."""
+  seq: String!
+
+  """True if the document was deleted."""
+  deleted: Boolean!
+
+  """The document payload at this change revision, if available."""
+  doc: Document
+}
+
+type Subscription {
+  """
+  Stream real-time document modifications, creations, and deletions from CouchDB's _changes feed.
+  Optionally filter by a list of document IDs.
+  
+  Example:
+  ` + "`" + `` + "`" + `` + "`" + `graphql
+  subscription OnDatabaseChanges {
+    docChanges {
+      id
+      seq
+      deleted
+      doc {
+        _id
+        _rev
+        data
+      }
+    }
+  }
+  ` + "`" + `` + "`" + `` + "`" + `
+  """
+  docChanges(docIds: [ID!]): DocumentChange!
+}
+
 # ─── Scalars ────────────────────────────────────────────────────────────────
 
 """
@@ -1321,6 +1433,20 @@ func (ec *executionContext) childFields_Document(ctx context.Context, field grap
 		return ec.fieldContext_Document_data(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Document", field.Name)
+}
+
+func (ec *executionContext) childFields_DocumentChange(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_DocumentChange_id(ctx, field)
+	case "seq":
+		return ec.fieldContext_DocumentChange_seq(ctx, field)
+	case "deleted":
+		return ec.fieldContext_DocumentChange_deleted(ctx, field)
+	case "doc":
+		return ec.fieldContext_DocumentChange_doc(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DocumentChange", field.Name)
 }
 
 func (ec *executionContext) childFields_FindResult(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -1699,6 +1825,20 @@ func (ec *executionContext) field_Query_queryView_args(ctx context.Context, rawA
 	return args, nil
 }
 
+func (ec *executionContext) field_Subscription_docChanges_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "docIds",
+		func(ctx context.Context, v any) ([]string, error) {
+			return ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["docIds"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field___Directive_args_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2028,6 +2168,107 @@ func (ec *executionContext) _Document_data(ctx context.Context, field graphql.Co
 }
 func (ec *executionContext) fieldContext_Document_data(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Document", field, false, false, errors.New("field of type Map does not have child fields"))
+}
+
+func (ec *executionContext) _DocumentChange_id(ctx context.Context, field graphql.CollectedField, obj *model.DocumentChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DocumentChange_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNID2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DocumentChange_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DocumentChange", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _DocumentChange_seq(ctx context.Context, field graphql.CollectedField, obj *model.DocumentChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DocumentChange_seq(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Seq, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DocumentChange_seq(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DocumentChange", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DocumentChange_deleted(ctx context.Context, field graphql.CollectedField, obj *model.DocumentChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DocumentChange_deleted(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Deleted, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DocumentChange_deleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DocumentChange", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _DocumentChange_doc(ctx context.Context, field graphql.CollectedField, obj *model.DocumentChange) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DocumentChange_doc(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Doc, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Document) graphql.Marshaler {
+			return ec.marshalODocument2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_DocumentChange_doc(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DocumentChange",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Document(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _FindResult_docs(ctx context.Context, field graphql.CollectedField, obj *model.FindResult) (ret graphql.Marshaler) {
@@ -3107,6 +3348,50 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields___Schema(ctx, field)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_docChanges(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	return graphql.ResolveFieldStream(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Subscription_docChanges(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Subscription().DocChanges(ctx, fc.Args["docIds"].([]string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.DocumentChange) graphql.Marshaler {
+			return ec.marshalNDocumentChange2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocumentChange(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Subscription_docChanges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_DocumentChange(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_docChanges_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -4857,6 +5142,59 @@ func (ec *executionContext) _Document(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var documentChangeImplementors = []string{"DocumentChange"}
+
+func (ec *executionContext) _DocumentChange(ctx context.Context, sel ast.SelectionSet, obj *model.DocumentChange) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, documentChangeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DocumentChange")
+		case "id":
+			out.Values[i] = ec._DocumentChange_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "seq":
+			out.Values[i] = ec._DocumentChange_seq(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleted":
+			out.Values[i] = ec._DocumentChange_deleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "doc":
+			out.Values[i] = ec._DocumentChange_doc(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var findResultImplementors = []string{"FindResult"}
 
 func (ec *executionContext) _FindResult(ctx context.Context, sel ast.SelectionSet, obj *model.FindResult) graphql.Marshaler {
@@ -5441,6 +5779,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	})
 
 	return out
+}
+
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		graphql.AddErrorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "docChanges":
+		return ec._Subscription_docChanges(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
 }
 
 var viewResultImplementors = []string{"ViewResult"}
@@ -6070,6 +6428,16 @@ func (ec *executionContext) marshalNDocument2ᚖgithubᚗcomᚋtonᚋcouchgraph�
 		return graphql.Null
 	}
 	return ec._Document(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDocumentChange2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocumentChange(ctx context.Context, sel ast.SelectionSet, v *model.DocumentChange) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DocumentChange(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFieldSet2string(ctx context.Context, v any) (string, error) {
@@ -6715,6 +7083,41 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	_ = sel
 	res := graphql.MarshalFloatContext(*v)
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalOID2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v any) (*string, error) {

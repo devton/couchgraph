@@ -1,6 +1,6 @@
 # CouchGraph — GraphQL API Reference
 
-> Complete reference of all Types, Queries, Mutations, and Scalars supported by CouchGraph.
+> Complete reference of all Types, Queries, Mutations, Subscriptions, Security Guards, and Metrics supported by CouchGraph.
 
 ---
 
@@ -70,9 +70,9 @@ query {
 Executes a declarative [Mango Query](https://docs.couchdb.org/en/stable/api/database/find.html) (`_find`) against CouchDB.
 
 **Input Fields (`FindInput`):**
-- `selector: Map!` (Required): JSON selector object, e.g. `{ "type": "user", "active": true }`.
+- `selector: Map!` (Required): JSON selector object, e.g. `{ "type": "movie", "rating": { "$gte": 8.5 } }`.
 - `fields: [String!]`: Projection list (optional).
-- `sort: [Map!]`: Sort array, e.g. `[{ "name": "asc" }]`.
+- `sort: [Map!]`: Sort array, e.g. `[{ "rating": "desc" }]`.
 - `limit: Int`: Max documents to return.
 - `skip: Int`: Number of documents to skip.
 - `bookmark: String`: Opaque cursor from a previous `FindResult` for efficient pagination.
@@ -82,15 +82,14 @@ Executes a declarative [Mango Query](https://docs.couchdb.org/en/stable/api/data
 query {
   findDocs(input: {
     selector: {
-      type: "user",
-      role: { "$in": ["admin", "engineer"] }
+      type: "movie"
+      rating: { "$gte": 8.5 }
     }
-    sort: [{ name: "asc" }]
-    limit: 20
+    sort: [{ rating: "desc" }]
+    limit: 10
   }) {
     docs {
       _id
-      _rev
       data
     }
     bookmark
@@ -105,36 +104,31 @@ query {
 Executes a CouchDB MapReduce View query (`_design/<ddoc>/_view/<view>`).
 
 **Input Fields (`ViewInput`):**
-- `designDoc: String!` (e.g. `"users"`)
-- `viewName: String!` (e.g. `"by_email"`)
+- `designDoc: String!` (e.g. `"movies"`)
+- `viewName: String!` (e.g. `"by_genre"`)
+- `key: Map`: Exact single key match (e.g. `"Drama"` or `1994`).
+- `keys: [Map!]`: Multiple exact keys match (e.g. `["Action", "Sci-Fi"]`).
 - `startKey: Map` / `endKey: Map`: Key range filtering.
 - `limit: Int` / `skip: Int`: Pagination parameters.
 - `descending: Boolean`: Reverse key ordering.
 - `includeDocs: Boolean`: Embed the full document payload in `row.doc`.
 - `reduce: Boolean`: Enable/disable reduce function.
-- `groupLevel: Int`: Grouping level for reduce views.
+- `group: Boolean`: Group by key in reduce queries.
+- `groupLevel: Int`: Grouping level for array keys in reduce views.
 
-**Example Request:**
+**Example Request (Grouped Count Aggregation):**
 ```graphql
 query {
   queryView(input: {
-    designDoc: "users"
-    viewName: "by_email"
-    startKey: "a"
-    endKey: "z\ufff0"
-    includeDocs: true
-    limit: 10
+    designDoc: "movies"
+    viewName: "by_genre"
+    reduce: true
+    group: true
   }) {
     totalRows
-    offset
     rows {
-      id
       key
       value
-      doc {
-        _id
-        data
-      }
     }
   }
 }
@@ -142,106 +136,52 @@ query {
 
 ---
 
-### 5. `databases: [String!]!` & `serverInfo: Map!`
-Provides diagnostic metadata about the connected CouchDB cluster.
+## 3. Subscriptions Reference (Real-Time `_changes`)
 
-**Example Request:**
+### `docChanges(docIds: [ID!]): DocumentChange!`
+Streams real-time document insertions, updates, and deletions directly from CouchDB's continuous `_changes` feed via WebSockets.
+
+**Example Subscription:**
 ```graphql
-query {
-  databases
-  serverInfo
-}
-```
-
----
-
-## 3. Mutations Reference
-
-### 1. `upsertDoc(input: UpsertInput!): MutationResult!`
-Creates or updates a single document.
-- **Create**: Omit `_id` to generate a new **UUIDv7** ID, or provide a custom `_id` without `_rev`.
-- **Update**: Provide `_id` and the current `_rev` token.
-
-**Example Create:**
-```graphql
-mutation {
-  upsertDoc(input: {
-    data: {
-      type: "order"
-      customer: "Alice"
-      total: 199.50
-      status: "pending"
-    }
-  }) {
-    ok
-    _id
-    _rev
-  }
-}
-```
-
-**Example Update:**
-```graphql
-mutation {
-  upsertDoc(input: {
-    _id: "01927f3a-1001-7000-8000-000000000001"
-    _rev: "1-abc123456789"
-    data: {
-      type: "order"
-      customer: "Alice"
-      total: 199.50
-      status: "completed"
-    }
-  }) {
-    ok
-    _id
-    _rev
-  }
-}
-```
-
----
-
-### 2. `deleteDoc(input: DeleteInput!): MutationResult!`
-Deletes a document from CouchDB using MVCC revision matching.
-
-**Example Request:**
-```graphql
-mutation {
-  deleteDoc(input: {
-    _id: "01927f3a-1001-7000-8000-000000000001"
-    _rev: "2-def987654321"
-  }) {
-    ok
-    _id
-    _rev
-  }
-}
-```
-
----
-
-### 3. `bulkDocs(input: BulkDocsInput!): BulkResult!`
-Performs bulk creates, updates, and deletes in a single atomic-like CouchDB `_bulk_docs` call.
-
-**Example Request:**
-```graphql
-mutation {
-  bulkDocs(input: {
-    docs: [
-      {
-        data: { type: "item", name: "Item A" }
-      },
-      {
-        data: { type: "item", name: "Item B" }
-      }
-    ]
-  }) {
-    results {
-      ok
+subscription OnLiveChanges {
+  docChanges {
+    id
+    seq
+    deleted
+    doc {
       _id
       _rev
+      data
     }
   }
 }
 ```
+
+---
+
+## 4. Security & Mutation Protection
+
+CouchGraph provides two layers of mutation control:
+
+### 1. Global Read-Only Mode (`READ_ONLY=true`)
+When `READ_ONLY=true` (or `MUTATIONS_ENABLED=false`) is set in the environment:
+- All mutations (`upsertDoc`, `deleteDoc`, `bulkDocs`, domain mutations) are immediately blocked.
+- Any mutation execution returns: `"server is in read-only mode: mutations are disabled"`.
+- All queries and subscriptions remain fully active.
+
+### 2. JWT Authentication & Role-Based Mutation Control (`AUTH_ENABLED=true`)
+When `AUTH_ENABLED=true` is configured with `JWT_SECRET`:
+- Requests supply an HTTP `Authorization: Bearer <jwt-token>` header.
+- Token claims are verified via HMAC-SHA256.
+- **Write Permissions**: A user must have role `"admin"`, `"editor"`, `"writer"`, `"write"`, or scope `"write"`.
+- **Read-Only Users**: Users with role `"reader"` or `"viewer"` are restricted to queries and cannot execute mutations (rejected with `"forbidden: write permissions required to execute mutations"`).
+- **Unauthenticated Requests**: Blocked from mutations when Auth is enabled (or blocked from queries if `REQUIRE_AUTH=true`).
+
+---
+
+## 5. Prometheus Metrics (`/metrics`)
+
+CouchGraph exposes Prometheus metrics at `/metrics` (configurable via `METRICS_PATH` and `METRICS_ENABLED=true`):
+- Memory allocations and heap statistics
+- Go runtime garbage collection cycles and pauses
+- Goroutine count and thread allocations

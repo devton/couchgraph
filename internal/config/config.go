@@ -12,17 +12,39 @@ import (
 
 // Config holds all runtime configuration for CouchGraph.
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	CouchDB  CouchDBConfig  `mapstructure:"couchdb"`
-	Log      LogConfig      `mapstructure:"log"`
+	Server  ServerConfig  `mapstructure:"server"`
+	CouchDB CouchDBConfig `mapstructure:"couchdb"`
+	Auth    AuthConfig    `mapstructure:"auth"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
+	Log     LogConfig     `mapstructure:"log"`
 }
 
-// ServerConfig controls the HTTP server.
+// ServerConfig controls the HTTP server and global read-only mode.
 type ServerConfig struct {
 	// Port to listen on. Default: 8080.
 	Port int `mapstructure:"port"`
 	// PlaygroundEnabled serves the GraphQL Playground at /. Default: true.
 	PlaygroundEnabled bool `mapstructure:"playground_enabled"`
+	// ReadOnly disables all GraphQL mutations globally across the server. Default: false.
+	ReadOnly bool `mapstructure:"read_only"`
+}
+
+// AuthConfig controls JWT authentication and mutation role enforcement.
+type AuthConfig struct {
+	// Enabled toggles JWT verification on incoming requests. Default: false.
+	Enabled bool `mapstructure:"enabled"`
+	// JWTSecret is the HMAC-SHA256 secret key used to verify tokens.
+	JWTSecret string `mapstructure:"jwt_secret"`
+	// RequireAuth requires a valid JWT even for read operations (queries). Default: false.
+	RequireAuth bool `mapstructure:"require_auth"`
+}
+
+// MetricsConfig controls Prometheus metrics exposition.
+type MetricsConfig struct {
+	// Enabled exposes the Prometheus /metrics endpoint. Default: true.
+	Enabled bool `mapstructure:"enabled"`
+	// Path to expose metrics on. Default: "/metrics".
+	Path string `mapstructure:"path"`
 }
 
 // CouchDBConfig holds CouchDB connection parameters.
@@ -47,15 +69,6 @@ type LogConfig struct {
 
 // Load reads configuration from environment variables (prefixed with COUCHGRAPH_)
 // and, if present, from a config.yaml file in the working directory.
-//
-// Environment variable mapping (examples):
-//
-//	COUCHGRAPH_SERVER_PORT=8080
-//	COUCHGRAPH_COUCHDB_URL=http://localhost:5984
-//	COUCHGRAPH_COUCHDB_USER=admin
-//	COUCHGRAPH_COUCHDB_PASSWORD=secret
-//	COUCHGRAPH_COUCHDB_DATABASE=mydb
-//	COUCHGRAPH_LOG_LEVEL=debug
 func Load() (*Config, error) {
 	// ── Auto-load .env file if present ────────────────────────────────────
 	loadDotEnv()
@@ -65,6 +78,12 @@ func Load() (*Config, error) {
 	// ── Defaults ──────────────────────────────────────────────────────────
 	v.SetDefault("server.port", 8080)
 	v.SetDefault("server.playground_enabled", true)
+	v.SetDefault("server.read_only", false)
+	v.SetDefault("auth.enabled", false)
+	v.SetDefault("auth.jwt_secret", "")
+	v.SetDefault("auth.require_auth", false)
+	v.SetDefault("metrics.enabled", true)
+	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("couchdb.url", "http://localhost:5984")
 	v.SetDefault("couchdb.user", "admin")
 	v.SetDefault("couchdb.password", "password")
@@ -110,6 +129,27 @@ func Load() (*Config, error) {
 	if val := os.Getenv("PLAYGROUND_ENABLED"); val != "" {
 		cfg.Server.PlaygroundEnabled = val == "true" || val == "1"
 	}
+	if val := os.Getenv("READ_ONLY"); val != "" {
+		cfg.Server.ReadOnly = val == "true" || val == "1"
+	}
+	if val := os.Getenv("MUTATIONS_ENABLED"); val != "" {
+		cfg.Server.ReadOnly = !(val == "true" || val == "1")
+	}
+	if val := os.Getenv("AUTH_ENABLED"); val != "" {
+		cfg.Auth.Enabled = val == "true" || val == "1"
+	}
+	if val := os.Getenv("JWT_SECRET"); val != "" {
+		cfg.Auth.JWTSecret = val
+	}
+	if val := os.Getenv("REQUIRE_AUTH"); val != "" {
+		cfg.Auth.RequireAuth = val == "true" || val == "1"
+	}
+	if val := os.Getenv("METRICS_ENABLED"); val != "" {
+		cfg.Metrics.Enabled = val == "true" || val == "1"
+	}
+	if val := os.Getenv("METRICS_PATH"); val != "" {
+		cfg.Metrics.Path = val
+	}
 	if val := os.Getenv("LOG_LEVEL"); val != "" {
 		cfg.Log.Level = val
 	}
@@ -122,6 +162,7 @@ func Load() (*Config, error) {
 	cfg.CouchDB.Password = strings.Trim(strings.TrimSpace(cfg.CouchDB.Password), "\"'`")
 	cfg.CouchDB.URL = strings.Trim(strings.TrimSpace(cfg.CouchDB.URL), "\"'`")
 	cfg.CouchDB.Database = strings.Trim(strings.TrimSpace(cfg.CouchDB.Database), "\"'`")
+	cfg.Auth.JWTSecret = strings.Trim(strings.TrimSpace(cfg.Auth.JWTSecret), "\"'`")
 
 	return &cfg, nil
 }

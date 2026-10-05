@@ -218,6 +218,12 @@ All settings can be configured via environment variables (e.g. in `.env` or Dock
 | `COUCHDB_PASSWORD` / `COUCHGRAPH_COUCHDB_PASSWORD` | `password` | CouchDB BasicAuth password |
 | `COUCHDB_DATABASE` / `COUCHGRAPH_COUCHDB_DATABASE` | `couchgraph` | Default CouchDB database |
 | `PORT` / `COUCHGRAPH_SERVER_PORT` | `8080` | Server HTTP port |
+| `READ_ONLY` / `MUTATIONS_ENABLED` | `false` | Disable all GraphQL mutations globally |
+| `AUTH_ENABLED` / `COUCHGRAPH_AUTH_ENABLED` | `false` | Enable JWT Bearer token authentication |
+| `JWT_SECRET` / `COUCHGRAPH_AUTH_JWT_SECRET` | `""` | HMAC-SHA256 secret for token verification |
+| `REQUIRE_AUTH` / `COUCHGRAPH_AUTH_REQUIRE_AUTH` | `false` | Require JWT for read queries as well |
+| `METRICS_ENABLED` / `COUCHGRAPH_METRICS_ENABLED` | `true` | Expose Prometheus metrics endpoint |
+| `METRICS_PATH` / `COUCHGRAPH_METRICS_PATH` | `/metrics` | HTTP path for Prometheus metrics |
 | `PLAYGROUND_ENABLED` / `COUCHGRAPH_SERVER_PLAYGROUND_ENABLED` | `true` | Enable GraphiQL Playground (`/`) |
 | `LOG_LEVEL` / `COUCHGRAPH_LOG_LEVEL` | `info` | Logging level (`debug`, `info`, `warn`, `error`) |
 | `LOG_FORMAT` / `COUCHGRAPH_LOG_FORMAT` | `console` | Log format (`console` or `json`) |
@@ -307,9 +313,10 @@ go build ./...
 - [x] Strongly-typed domain schema extensions (1:1 & 1:N relations)
 - [x] DataLoader batching via `_bulk_get` (Zero N+1)
 - [x] MapReduce Reduce aggregations (`_count`, `_stats`, `_sum`, `group`)
-- [ ] GraphQL Subscriptions via CouchDB `_changes` feed
-- [ ] Per-request authentication (JWT / CouchDB session tokens)
-- [ ] Prometheus metrics endpoint (`/metrics`)
+- [x] Global Read-Only Mode (`READ_ONLY=true` / `MUTATIONS_ENABLED=false`)
+- [x] Per-request JWT Authentication & Role-based Mutation Control
+- [x] Real-time GraphQL Subscriptions via CouchDB `_changes` feed (WebSockets)
+- [x] Prometheus metrics endpoint (`/metrics`)
 - [ ] OpenTelemetry tracing
 
 ---

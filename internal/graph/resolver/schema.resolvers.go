@@ -248,13 +248,65 @@ func (r *queryResolver) ServerInfo(ctx context.Context) (any, error) {
 	return r.Repo.ServerInfo(ctx)
 }
 
+// DocChanges is the resolver for the docChanges field.
+func (r *subscriptionResolver) DocChanges(ctx context.Context, docIds []string) (<-chan *model.DocumentChange, error) {
+	events, err := r.Repo.SubscribeChanges(ctx, "now")
+	if err != nil {
+		return nil, err
+	}
+
+	filterMap := make(map[string]bool, len(docIds))
+	for _, id := range docIds {
+		filterMap[id] = true
+	}
+
+	out := make(chan *model.DocumentChange, 16)
+	go func() {
+		defer close(out)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case event, ok := <-events:
+				if !ok {
+					return
+				}
+				if len(filterMap) > 0 && !filterMap[event.ID] {
+					continue
+				}
+				var doc *model.Document
+				if event.Doc != nil {
+					doc = rawToDocument(event.Doc)
+				}
+				change := &model.DocumentChange{
+					ID:      event.ID,
+					Seq:     event.Seq,
+					Deleted: event.Deleted,
+					Doc:     doc,
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case out <- change:
+				}
+			}
+		}
+	}()
+
+	return out, nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Subscription returns generated.SubscriptionResolver implementation.
+func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subscriptionResolver{r} }
+
 type (
-	mutationResolver struct{ *Resolver }
-	queryResolver    struct{ *Resolver }
+	mutationResolver     struct{ *Resolver }
+	queryResolver        struct{ *Resolver }
+	subscriptionResolver struct{ *Resolver }
 )

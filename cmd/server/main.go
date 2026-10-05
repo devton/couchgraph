@@ -10,12 +10,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
 
+	"github.com/ton/couchgraph/internal/auth"
 	"github.com/ton/couchgraph/internal/config"
 	"github.com/ton/couchgraph/internal/couch"
 	"github.com/ton/couchgraph/internal/graph/generated"
@@ -77,6 +81,11 @@ func main() {
 
 	srv := handler.NewDefaultServer(schema)
 
+	// Subscriptions & WebSocket transport
+	srv.AddTransport(transport.Websocket{
+		KeepAlivePingInterval: 10 * time.Second,
+	})
+
 	// Additional transports
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -85,13 +94,65 @@ func main() {
 	// Enable introspection
 	srv.Use(extension.Introspection{})
 
+	// ── Mutation Guard & Auth Enforcement ─────────────────────────────────
+	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+		oc := graphql.GetOperationContext(ctx)
+		if oc.Operation != nil && oc.Operation.Operation == ast.Mutation {
+			// 1. Global Read-Only Mode Check
+			if cfg.Server.ReadOnly {
+				return func(ctx context.Context) *graphql.Response {
+					return graphql.ErrorResponse(ctx, "server is in read-only mode: mutations are disabled")
+				}
+			}
+
+			// 2. JWT Auth & Mutation Role Check (when Auth is enabled)
+			if cfg.Auth.Enabled {
+				user := auth.ForContext(ctx)
+				if user == nil {
+					return func(ctx context.Context) *graphql.Response {
+						return graphql.ErrorResponse(ctx, "unauthorized: authentication required to execute mutations")
+					}
+				}
+				if !user.CanWrite() {
+					return func(ctx context.Context) *graphql.Response {
+						return graphql.ErrorResponse(ctx, "forbidden: write permissions required to execute mutations")
+					}
+				}
+			}
+		}
+		return next(ctx)
+	})
+
 	mux := http.NewServeMux()
-	mux.Handle("/query", srv)
+
+	// Wrap /query with JWT Auth Middleware
+	queryHandler := auth.Middleware(cfg.Auth, log)(srv)
+	mux.Handle("/query", queryHandler)
+
+	// Prometheus Metrics Endpoint
+	if cfg.Metrics.Enabled {
+		metricsPath := cfg.Metrics.Path
+		if metricsPath == "" {
+			metricsPath = "/metrics"
+		}
+		mux.Handle(metricsPath, promhttp.Handler())
+		log.Info("Prometheus metrics enabled", zap.String("path", metricsPath))
+	}
 
 	if cfg.Server.PlaygroundEnabled {
 		mux.Handle("/", playground.Handler("CouchGraph", "/query", playground.WithGraphiqlEnablePluginExplorer(true)))
 		log.Info("GraphQL Playground enabled",
 			zap.String("url", fmt.Sprintf("http://localhost:%d", cfg.Server.Port)),
+		)
+	}
+
+	if cfg.Server.ReadOnly {
+		log.Warn("🔒 Server is running in READ-ONLY mode (all mutations disabled)")
+	}
+
+	if cfg.Auth.Enabled {
+		log.Info("🛡️ JWT Authentication enabled",
+			zap.Bool("require_auth_for_queries", cfg.Auth.RequireAuth),
 		)
 	}
 
