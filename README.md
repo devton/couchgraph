@@ -317,6 +317,7 @@ go build ./...
 - [x] Per-request JWT Authentication & Role-based Mutation Control
 - [x] Real-time GraphQL Subscriptions via CouchDB `_changes` feed (WebSockets)
 - [x] Prometheus metrics endpoint (`/metrics`)
+- [ ] Full-Text Search Integration (CouchDB Nouveau / Lucene `_nouveau` & Mango `$text` operator)
 - [ ] OpenTelemetry tracing
 
 ---
