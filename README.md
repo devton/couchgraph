@@ -1,8 +1,27 @@
+<p align="center">
+  <img src="./assets/couchgraph-banner.jpg" alt="CouchGraph — GraphQL API layer for CouchDB" width="100%" />
+</p>
+
 # CouchGraph
 
 > High-performance, schema-first GraphQL API layer for CouchDB, written in Go.
 
 CouchGraph exposes CouchDB through a modern GraphQL API — eliminating REST boilerplate and N+1 query bottlenecks. Query documents by UUIDv7 ID, run [Mango](https://docs.couchdb.org/en/stable/api/database/find.html) selectors, execute MapReduce views with built-in reduce aggregations (`_count`, `_stats`, `_sum`), and cross documents with nested 1:1 and 1:N relational modeling.
+
+---
+
+## 🔀 How It Works
+
+<p align="center">
+  <img src="./assets/couchgraph-flow.jpg" alt="CouchGraph flow: cascading processes write documents into a multi-master CouchDB cluster, CouchGraph serves them as a single GraphQL API" width="100%" />
+</p>
+
+1. **Cascading processes** (ingest → transform → enrich → publish) each write JSON documents straight into CouchDB. There's no shared queue to coordinate and no schema migrations to run.
+2. **A multi-master CouchDB cluster** accepts writes on any node and replicates them to the others. Writes keep flowing even while a node is down, and conflicts are tracked by revision instead of locks.
+3. **CouchGraph** sits in front of the cluster. It batches lookups through `_bulk_get` (DataLoader), enforces JWT and read-only guards, exposes Views and Mango queries, and streams `_changes` as live subscriptions.
+4. **GraphQL clients** (web, mobile, other services) query one typed graph instead of going through dozens of REST endpoints.
+
+> **Many documents in · One graph out.**
 
 ---
 
@@ -23,15 +42,15 @@ CouchGraph exposes CouchDB through a modern GraphQL API — eliminating REST boi
 
 ## 📚 Documentation & Guides
 
-- 🚀 [Getting Started Guide](file:///Users/ton/work/couchgraph/docs/getting-started.md) — Local setup, environment config, and quickstart.
-- 📖 [GraphQL API Reference](file:///Users/ton/work/couchgraph/docs/graphql-api.md) — Detailed reference for all queries, mutations, subscriptions, security guards, and metrics.
-- 📘 [Relations & Domain Modeling Guide](file:///Users/ton/work/couchgraph/docs/relations-and-domain-modeling.md) — 1:1, 1:N relations, virtual collections, and foreign keys.
-- 🛡️ [JWT Auth & User-Scoped Documents](file:///Users/ton/work/couchgraph/docs/auth-and-user-scoped-documents.md) — Multi-tenancy, user ownership, and Row-Level Security (RLS).
-- 🏛️ [Architecture Deep Dive](file:///Users/ton/work/couchgraph/docs/architecture.md) — DataLoader batching, UUIDv7 indexing, and layer design.
-- 🚢 [Dokploy Deployment Guide](file:///Users/ton/work/couchgraph/docs/deployment-dokploy.md) — Production deployment with Traefik and auto SSL.
-- 📋 [Agent Role System Runbook](file:///Users/ton/work/couchgraph/docs/runbooks/agent-role-system.md) — Operational execution playbook for autonomous agent workflows.
-- 📋 [Plan to Blueprint Runbook](file:///Users/ton/work/couchgraph/docs/runbooks/plan-to-blueprint.md) — Transformation guide from plan to executable blueprints.
-- 💡 [IMDb Dataset & Query Examples](file:///Users/ton/work/couchgraph/examples/movies_queries.graphql) — 12 ready-to-use GraphQL queries.
+- 🚀 [Getting Started Guide](./docs/getting-started.md) — Local setup, environment config, and quickstart.
+- 📖 [GraphQL API Reference](./docs/graphql-api.md) — Detailed reference for all queries, mutations, subscriptions, security guards, and metrics.
+- 📘 [Relations & Domain Modeling Guide](./docs/relations-and-domain-modeling.md) — 1:1, 1:N relations, virtual collections, and foreign keys.
+- 🛡️ [JWT Auth & User-Scoped Documents](./docs/auth-and-user-scoped-documents.md) — Multi-tenancy, user ownership, and Row-Level Security (RLS).
+- 🏛️ [Architecture Deep Dive](./docs/architecture.md) — DataLoader batching, UUIDv7 indexing, and layer design.
+- 🚢 [Dokploy Deployment Guide](./docs/deployment-dokploy.md) — Production deployment with Traefik and auto SSL.
+- 📋 [Agent Role System Runbook](./docs/runbooks/agent-role-system.md) — Operational execution playbook for autonomous agent workflows.
+- 📋 [Plan to Blueprint Runbook](./docs/runbooks/plan-to-blueprint.md) — Transformation guide from plan to executable blueprints.
+- 💡 [IMDb Dataset & Query Examples](./examples/movies_queries.graphql) — 12 ready-to-use GraphQL queries.
 
 ---
 
@@ -82,7 +101,7 @@ go run ./cmd/seed
 go run ./cmd/seed -db couchgraph_movies
 ```
 
-Once seeded, open [http://localhost:8080](http://localhost:8080) and run queries from [`examples/movies_queries.graphql`](file:///Users/ton/work/couchgraph/examples/movies_queries.graphql).
+Once seeded, open [http://localhost:8080](http://localhost:8080) and run queries from [`examples/movies_queries.graphql`](./examples/movies_queries.graphql).
 
 ---
 
@@ -206,7 +225,7 @@ func (r *categoryResolver) Products(ctx context.Context, obj *model.Category) ([
 }
 ```
 
-For full details and patterns, read the [Relations & Domain Modeling Guide](file:///Users/ton/work/couchgraph/docs/relations-and-domain-modeling.md).
+For full details and patterns, read the [Relations & Domain Modeling Guide](./docs/relations-and-domain-modeling.md).
 
 ---
 
