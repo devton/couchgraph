@@ -340,6 +340,7 @@ go build ./...
 - [x] Real-time GraphQL Subscriptions via CouchDB `_changes` feed (WebSockets)
 - [x] Prometheus metrics endpoint (`/metrics`)
 - [ ] Full-Text Search Integration (CouchDB Nouveau / Lucene `_nouveau` & Mango `$text` operator)
+- [ ] Multi-database support: optional `COUCHDB_DATABASE` (default only), per-request database via `db` argument on generic operations, `COUCHDB_ALLOWED_DATABASES` allowlist with system databases (`_*`) always blocked, and DataLoader keyed by `db + id`
 - [ ] OpenTelemetry tracing
 
 ---
