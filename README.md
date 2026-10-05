@@ -1,40 +1,38 @@
 # CouchGraph
 
-> A GraphQL API layer for CouchDB, written in Go.
+> High-performance, schema-first GraphQL API layer for CouchDB, written in Go.
 
-CouchGraph exposes your CouchDB documents through a strongly-typed, schema-first GraphQL API — no REST endpoints, no boilerplate. Query documents by ID, run [Mango](https://docs.couchdb.org/en/stable/api/database/find.html) selectors, execute MapReduce views, and perform bulk writes — all through a single GraphQL endpoint.
-
----
-
-## Features
-
-- **Schema-first GraphQL** — powered by [gqlgen](https://gqlgen.com/)
-- **Mango queries** — pass any `_find` selector directly as a GraphQL input
-- **View queries** — query CouchDB MapReduce design documents
-- **Batch loading** — `documents(ids: [...])` uses `_bulk_get` internally (no N+1)
-- **Cursor pagination** — bookmark-based (native to CouchDB, no `OFFSET`)
-- **Full CRUD** — create, update, delete via mutations
-- **Bulk operations** — `bulkDocs` mirrors CouchDB's `_bulk_docs`
-- **UUIDv7 IDs** — time-ordered document IDs generated automatically
-- **GraphQL Playground** — available at `/` in development
-- **Graceful shutdown** — SIGINT/SIGTERM handled cleanly
-- **Structured logging** — via [zap](https://github.com/uber-go/zap)
-- **Docker-ready** — distroless image, < 10 MB
+CouchGraph exposes CouchDB through a modern GraphQL API — eliminating REST boilerplate and N+1 query bottlenecks. Query documents by UUIDv7 ID, run [Mango](https://docs.couchdb.org/en/stable/api/database/find.html) selectors, execute MapReduce views with built-in reduce aggregations (`_count`, `_stats`, `_sum`), and cross documents with nested 1:1 and 1:N relational modeling.
 
 ---
 
-## Documentation & Guides
+## Key Features
 
-- 🚀 [Getting Started Guide](file:///Users/ton/work/couchgraph/docs/getting-started.md) — Local setup, first queries, configuration
-- 📖 [GraphQL API Reference](file:///Users/ton/work/couchgraph/docs/graphql-api.md) — Detailed reference for all queries, mutations, scalars, and inputs
-- 🏛️ [Architecture Deep Dive](file:///Users/ton/work/couchgraph/docs/architecture.md) — DataLoader batching, UUIDv7 indexing, and layer design
-- 🚢 [Dokploy Deployment Guide](file:///Users/ton/work/couchgraph/docs/deployment-dokploy.md) — Production deployment with Traefik and auto SSL
-- 💡 [Example Queries (`examples/queries.graphql`)](file:///Users/ton/work/couchgraph/examples/queries.graphql) — Ready-to-use GraphQL queries
-- 🐳 [Dokploy Docker Compose (`docker-compose.dokploy.yml`)](file:///Users/ton/work/couchgraph/docker-compose.dokploy.yml) — Production Compose stack
+- **Schema-first GraphQL** — powered by [gqlgen](https://gqlgen.com/) with full introspection and GraphiQL Explorer.
+- **Generic & Agnostic Core** — full schemaless support for any CouchDB database (`scalar Map`, `findDocs`, `queryView`).
+- **Domain Modeling & Relations** — define strongly-typed GraphQL entities (`Movie`, `Director`, etc.) with nested 1:1 and 1:N relations.
+- **Zero N+1 Query Engine** — internal `couch.Loader` batches lookups into single CouchDB `_bulk_get` requests.
+- **MapReduce Views & Aggregations** — exact single key (`key`), multi-key lookup (`keys`), ranges (`startKey`/`endKey`), and grouped reduce aggregations (`group: true`).
+- **Mango Queries** — pass declarative `_find` selectors, projections, and sort descriptors.
+- **Cursor Pagination** — native CouchDB bookmark pagination without `OFFSET` performance traps.
+- **Full CRUD & Bulk Writes** — single `upsertDoc`/`deleteDoc` and atomic `bulkDocs` (`_bulk_docs`).
+- **UUIDv7 Primary Keys** — time-ordered, sortable document identifiers generated automatically (`uuid.NewV7()`).
+- **Docker & Dokploy Ready** — ultra-lightweight distroless container image (< 15 MB).
 
 ---
 
-## Quick Start
+## 📚 Documentation & Guides
+
+- 📘 [Relations & Domain Modeling Guide](file:///Users/ton/work/couchgraph/docs/relations-and-domain-modeling.md) — 1:1, 1:N relations, virtual collections, and foreign keys.
+- 🚀 [Getting Started Guide](file:///Users/ton/work/couchgraph/docs/getting-started.md) — Local setup, environment config, and quickstart.
+- 📖 [GraphQL API Reference](file:///Users/ton/work/couchgraph/docs/graphql-api.md) — Detailed reference for all queries, mutations, scalars, and inputs.
+- 🏛️ [Architecture Deep Dive](file:///Users/ton/work/couchgraph/docs/architecture.md) — DataLoader batching, UUIDv7 indexing, and layer design.
+- 🚢 [Dokploy Deployment Guide](file:///Users/ton/work/couchgraph/docs/deployment-dokploy.md) — Production deployment with Traefik and auto SSL.
+- 💡 [IMDb Dataset & Query Examples](file:///Users/ton/work/couchgraph/examples/movies_queries.graphql) — 12 ready-to-use GraphQL queries.
+
+---
+
+## ⚡ Quick Start
 
 ### 1. Start CouchDB locally
 
@@ -42,186 +40,88 @@ CouchGraph exposes your CouchDB documents through a strongly-typed, schema-first
 docker-compose up -d couchdb
 ```
 
-### 2. Run the server
+### 2. Configure environment
+
+Copy the environment file and configure your CouchDB credentials:
 
 ```bash
-# Copy and edit environment config
 cp .env.example .env
+```
 
-# Run
+```ini
+COUCHDB_URL=http://localhost:5984
+COUCHDB_USER=admin
+COUCHDB_PASSWORD=password
+COUCHDB_DATABASE=couchgraph
+PORT=8080
+PLAYGROUND_ENABLED=true
+```
+
+### 3. Run the server
+
+```bash
 go run ./cmd/server
 ```
 
-Open [http://localhost:8080](http://localhost:8080) for the GraphQL Playground.
+Open [http://localhost:8080](http://localhost:8080) for the interactive **GraphQL Playground** with the GraphiQL Explorer and Docs Explorer.
 
-### 3. Run everything with Docker Compose
+---
+
+## 🎬 Testing with the IMDb Dataset Seeder
+
+CouchGraph includes an on-demand dataset seeder (`cmd/seed/main.go`) that populates classic movies, directors, foreign key relations, Mango indexes, and MapReduce views:
 
 ```bash
-docker-compose up -d
+# Seed the database configured in your .env:
+go run ./cmd/seed
+
+# Or seed into a dedicated test database:
+go run ./cmd/seed -db couchgraph_movies
 ```
+
+Once seeded, open [http://localhost:8080](http://localhost:8080) and run queries from [`examples/movies_queries.graphql`](file:///Users/ton/work/couchgraph/examples/movies_queries.graphql).
 
 ---
 
-## Configuration
+## 🛠️ Usage Modes
 
-All settings are configured via environment variables (prefix: `COUCHGRAPH_`) or a `config.yaml` file in the working directory.
+### Mode 1: Standalone Schemaless Service (Agnostic)
 
-| Variable | Default | Description |
-|---|---|---|
-| `COUCHGRAPH_COUCHDB_URL` | `http://localhost:5984` | CouchDB endpoint |
-| `COUCHGRAPH_COUCHDB_USER` | `admin` | CouchDB username |
-| `COUCHGRAPH_COUCHDB_PASSWORD` | `password` | CouchDB password |
-| `COUCHGRAPH_COUCHDB_DATABASE` | `couchgraph` | Database to use (created if missing) |
-| `COUCHGRAPH_SERVER_PORT` | `8080` | HTTP port |
-| `COUCHGRAPH_SERVER_PLAYGROUND_ENABLED` | `true` | Enable GraphQL Playground |
-| `COUCHGRAPH_LOG_LEVEL` | `info` | Log level: `debug` \| `info` \| `warn` \| `error` |
-| `COUCHGRAPH_LOG_FORMAT` | `json` | Log format: `json` \| `console` |
+Use CouchGraph out-of-the-box as a high-performance GraphQL bridge for any CouchDB database without writing Go code:
 
----
-
-## GraphQL API
-
-### Queries
-
-#### Fetch a single document
-
+#### Mango Query (`_find`)
 ```graphql
-query {
-  document(id: "01927f3a-b1c2-7e4d-a9f0-123456789abc") {
-    _id
-    _rev
-    data
-  }
-}
-```
-
-#### Batch fetch (uses `_bulk_get` — no N+1)
-
-```graphql
-query {
-  documents(ids: ["id-1", "id-2", "id-3"]) {
-    _id
-    _rev
-    data
-  }
-}
-```
-
-#### Mango query (`_find`)
-
-```graphql
-query {
+query FindSciFiMovies {
   findDocs(input: {
-    selector: { type: "user", active: true }
-    sort: [{ name: "asc" }]
-    limit: 20
-    bookmark: "g2wAAAABaANkAB..."  # cursor from previous response
+    selector: {
+      type: "movie"
+      genres: { "$in": ["Sci-Fi"] }
+      rating: { "$gte": 8.5 }
+    }
+    sort: [{ rating: "desc" }]
+    limit: 5
   }) {
     docs {
       _id
       data
     }
-    bookmark
-    warning
   }
 }
 ```
 
-#### View query (MapReduce)
-
+#### MapReduce View with Grouped Aggregation
 ```graphql
-query {
+query MovieCountPerGenre {
   queryView(input: {
-    designDoc: "users"
-    viewName:  "by_email"
-    startKey:  "a"
-    endKey:    "z"
-    limit:     50
-    includeDocs: true
+    designDoc: "movies"
+    viewName: "by_genre"
+    reduce: true
+    group: true
   }) {
     totalRows
     rows {
-      id
       key
       value
-      doc { _id data }
-    }
-  }
-}
-```
-
-#### Server utilities
-
-```graphql
-query {
-  databases
-  serverInfo
-}
-```
-
----
-
-### Mutations
-
-#### Create a document (UUIDv7 ID auto-generated)
-
-```graphql
-mutation {
-  upsertDoc(input: {
-    data: { type: "user", name: "Alice", active: true }
-  }) {
-    ok
-    _id
-    _rev
-  }
-}
-```
-
-#### Update a document
-
-```graphql
-mutation {
-  upsertDoc(input: {
-    _id:  "01927f3a-b1c2-7e4d-a9f0-123456789abc"
-    _rev: "1-abc123"
-    data: { type: "user", name: "Alice", active: false }
-  }) {
-    ok
-    _id
-    _rev
-  }
-}
-```
-
-#### Delete a document
-
-```graphql
-mutation {
-  deleteDoc(input: {
-    _id:  "01927f3a-b1c2-7e4d-a9f0-123456789abc"
-    _rev: "2-def456"
-  }) {
-    ok
-    _id
-    _rev
-  }
-}
-```
-
-#### Bulk write
-
-```graphql
-mutation {
-  bulkDocs(input: {
-    docs: [
-      { data: { type: "product", name: "Widget" } }
-      { data: { type: "product", name: "Gadget" } }
-    ]
-  }) {
-    results {
-      ok
-      _id
-      _rev
     }
   }
 }
@@ -229,113 +129,191 @@ mutation {
 
 ---
 
-## Architecture
+### Mode 2: Custom Domain Modeling & Schema Extensions
 
-```
-Client (Browser / App / CLI)
-        │  GraphQL query / mutation
-        ▼
-┌─────────────────────────┐
-│   gqlgen HTTP server    │  :8080/query
-│   Playground at /       │
-└────────────┬────────────┘
-             │ thin resolvers
-             ▼
-┌─────────────────────────┐
-│   Repository layer      │  internal/couch/repository.go
-│   DataLoader (batch)    │  internal/couch/dataloader.go
-└────────────┬────────────┘
-             │ Kivik v4 driver
-             ▼
-┌─────────────────────────┐
-│   CouchDB  :5984        │
-│   _find  _bulk_get      │
-│   _design/_view         │
-└─────────────────────────┘
-```
+You can easily extend CouchGraph with strongly-typed domain schemas, business queries, and nested document relations.
 
-### Document IDs
+#### Step 1: Define your domain schema (`internal/graph/schema/ecommerce.graphqls`)
+```graphql
+type Product {
+  id: ID!
+  title: String!
+  price: Float!
+  categoryId: ID!
+  
+  # 1:1 relation resolved via DataLoader (_bulk_get):
+  category: Category
+}
 
-All documents created by CouchGraph use **UUIDv7** — time-ordered, globally unique identifiers. This means:
+type Category {
+  id: ID!
+  name: String!
+  
+  # 1:N relation resolved via MapReduce View:
+  products: [Product!]!
+}
 
-- Documents sort lexicographically by creation time
-- You can range-scan by time using `startKey` / `endKey` in views
-- No custom sequencing logic needed
-
----
-
-## Project Layout
-
-```
-couchgraph/
-├── cmd/server/main.go              # entry point
-├── internal/
-│   ├── config/config.go            # config loader (Viper)
-│   ├── couch/
-│   │   ├── client.go               # Kivik connection wrapper
-│   │   ├── repository.go           # CRUD + Mango + Views
-│   │   └── dataloader.go           # _bulk_get batch loader
-│   └── graph/
-│       ├── schema/schema.graphqls  # GraphQL schema (source of truth)
-│       ├── generated/              # gqlgen-generated code (do not edit)
-│       ├── model/models_gen.go     # generated models
-│       ├── resolver/
-│       │   ├── resolver.go         # dependency injection
-│       │   └── schema.resolvers.go # all query/mutation resolvers
-│       └── scalar/map.go           # custom Map JSON scalar
-├── docker-compose.yml
-├── Dockerfile
-├── gqlgen.yml
-└── .env.example
+extend type Query {
+  product(id: ID!): Product
+  products(limit: Int): [Product!]!
+  categories: [Category!]!
+}
 ```
 
----
+#### Step 2: Configure relation resolvers in `gqlgen.yml`
+```yaml
+models:
+  Product:
+    fields:
+      category:
+        resolver: true
+  Category:
+    fields:
+      products:
+        resolver: true
+```
 
-## Development
-
-### Regenerate GraphQL code
-
-After editing `internal/graph/schema/schema.graphqls`:
-
+#### Step 3: Generate and implement resolvers
 ```bash
-go install github.com/99designs/gqlgen@latest
 gqlgen generate
 ```
 
-### Run with live reload (optional)
+In `internal/graph/resolver/ecommerce.resolvers.go`:
+```go
+// 1:1 Lookups use DataLoader (Zero N+1):
+func (r *productResolver) Category(ctx context.Context, obj *model.Product) (*model.Category, error) {
+    loader := couch.NewLoader(r.Repo)
+    doc, err := loader.LoadAndWait(ctx, obj.CategoryID)
+    if err != nil || doc == nil {
+        return nil, err
+    }
+    return mapToCategory(doc), nil
+}
 
-```bash
-# Install air
-go install github.com/air-verse/air@latest
+// 1:N Lookups query the indexed foreign key view:
+func (r *categoryResolver) Products(ctx context.Context, obj *model.Category) ([]*model.Product, error) {
+    falseVal := false
+    res, err := r.Repo.QueryView(ctx, couch.ViewOptions{
+        DesignDoc: "catalog",
+        ViewName:  "by_category_id",
+        Key:       obj.ID,
+        Reduce:    &falseVal,
+    })
+    // map rows to []*model.Product...
+}
+```
 
-air
+For full details and patterns, read the [Relations & Domain Modeling Guide](file:///Users/ton/work/couchgraph/docs/relations-and-domain-modeling.md).
+
+---
+
+## ⚙️ Configuration Reference
+
+All settings can be configured via environment variables (e.g. in `.env` or Docker) or a `config.yaml` file:
+
+| Variable | Default | Description |
+|---|---|---|
+| `COUCHDB_URL` / `COUCHGRAPH_COUCHDB_URL` | `http://localhost:5984` | CouchDB endpoint URL |
+| `COUCHDB_USER` / `COUCHGRAPH_COUCHDB_USER` | `admin` | CouchDB BasicAuth username |
+| `COUCHDB_PASSWORD` / `COUCHGRAPH_COUCHDB_PASSWORD` | `password` | CouchDB BasicAuth password |
+| `COUCHDB_DATABASE` / `COUCHGRAPH_COUCHDB_DATABASE` | `couchgraph` | Default CouchDB database |
+| `PORT` / `COUCHGRAPH_SERVER_PORT` | `8080` | Server HTTP port |
+| `PLAYGROUND_ENABLED` / `COUCHGRAPH_SERVER_PLAYGROUND_ENABLED` | `true` | Enable GraphiQL Playground (`/`) |
+| `LOG_LEVEL` / `COUCHGRAPH_LOG_LEVEL` | `info` | Logging level (`debug`, `info`, `warn`, `error`) |
+| `LOG_FORMAT` / `COUCHGRAPH_LOG_FORMAT` | `console` | Log format (`console` or `json`) |
+
+---
+
+## 🏛️ Architecture
+
+```
+GraphQL Client (Browser / Mobile / Microservice)
+        │
+        ▼  POST /query
+┌─────────────────────────────────────────┐
+│   gqlgen Server + GraphiQL Explorer     │  :8080/
+└────────────────────┬────────────────────┘
+                     │
+        ┌────────────┴────────────┐
+        ▼                         ▼
+┌──────────────────┐    ┌──────────────────┐
+│ Schemaless Core  │    │ Typed Extensions │
+│ (findDocs, Views)│    │ (Movie, Director)│
+└────────┬─────────┘    └────────┬─────────┘
+         │                       │
+         ▼                       ▼
+┌──────────────────────────────────────────┐
+│   couch.Repository + couch.Loader        │  DataLoader (_bulk_get batching)
+└────────────────────┬─────────────────────┘
+                     │ BasicAuth HTTP
+                     ▼
+┌──────────────────────────────────────────┐
+│   CouchDB Cluster (:5984)                │
+│   _find, _bulk_get, _design/_view        │
+└──────────────────────────────────────────┘
 ```
 
 ---
 
-## Stack
+## 📦 Project Layout
 
-| Component | Package |
-|---|---|
-| GraphQL server | [gqlgen](https://github.com/99designs/gqlgen) v0.17 |
-| CouchDB driver | [kivik](https://github.com/go-kivik/kivik) v4 |
-| Configuration | [viper](https://github.com/spf13/viper) |
-| Logging | [zap](https://github.com/uber-go/zap) |
-| ID generation | [google/uuid](https://github.com/google/uuid) (v7) |
+```
+couchgraph/
+├── cmd/
+│   ├── server/main.go                  # Server entry point
+│   └── seed/main.go                    # IMDb movies & directors seeder
+├── internal/
+│   ├── config/config.go                # Environment & YAML config loader
+│   ├── couch/
+│   │   ├── client.go                   # Kivik CouchDB client wrapper
+│   │   ├── repository.go               # CouchDB CRUD, Views, and Mango operations
+│   │   └── dataloader.go               # Request-level _bulk_get batcher
+│   └── graph/
+│       ├── schema/
+│       │   ├── schema.graphqls         # Generic core GraphQL schema
+│       │   └── movies.graphqls         # Typed domain schema extension (IMDb demo)
+│       ├── resolver/
+│       │   ├── resolver.go             # Dependency injection root
+│       │   ├── schema.resolvers.go     # Generic query/mutation resolvers
+│       │   └── movies.resolvers.go     # Typed relational domain resolvers
+│       ├── model/models_gen.go         # Generated Go GraphQL models
+│       └── scalar/map.go               # Custom Map JSON scalar
+├── docs/                               # Guides & Architecture runbooks
+├── examples/movies_queries.graphql     # Query examples
+├── docker-compose.yml
+├── Dockerfile
+└── gqlgen.yml
+```
 
 ---
 
-## Roadmap
+## 🧪 Testing & Code Quality
 
+```bash
+# Run all unit tests
+go test ./...
+
+# Run static analysis / vetting
+go vet ./...
+
+# Compile entire project
+go build ./...
+```
+
+---
+
+## 🗺️ Roadmap
+
+- [x] Strongly-typed domain schema extensions (1:1 & 1:N relations)
+- [x] DataLoader batching via `_bulk_get` (Zero N+1)
+- [x] MapReduce Reduce aggregations (`_count`, `_stats`, `_sum`, `group`)
 - [ ] GraphQL Subscriptions via CouchDB `_changes` feed
 - [ ] Per-request authentication (JWT / CouchDB session tokens)
-- [ ] Prometheus metrics endpoint
-- [ ] Typed schema extensions (map CouchDB doc types to GraphQL types)
-- [ ] Index management mutations (`createIndex`, `deleteIndex`)
+- [ ] Prometheus metrics endpoint (`/metrics`)
 - [ ] OpenTelemetry tracing
 
 ---
 
-## License
+## 📄 License
 
 MIT
