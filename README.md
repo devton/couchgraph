@@ -10,7 +10,7 @@ CouchGraph exposes CouchDB through a modern GraphQL API — eliminating REST boi
 
 ---
 
-## 🔀 How It Works
+## How It Works
 
 <p align="center">
   <img src="./assets/couchgraph-flow.jpg" alt="CouchGraph flow: cascading processes write documents into a multi-master CouchDB cluster, CouchGraph serves them as a single GraphQL API" width="100%" />
@@ -40,21 +40,21 @@ CouchGraph exposes CouchDB through a modern GraphQL API — eliminating REST boi
 
 ---
 
-## 📚 Documentation & Guides
+## Documentation & Guides
 
-- 🚀 [Getting Started Guide](./docs/getting-started.md) — Local setup, environment config, and quickstart.
-- 📖 [GraphQL API Reference](./docs/graphql-api.md) — Detailed reference for all queries, mutations, subscriptions, security guards, and metrics.
-- 📘 [Relations & Domain Modeling Guide](./docs/relations-and-domain-modeling.md) — 1:1, 1:N relations, virtual collections, and foreign keys.
-- 🛡️ [JWT Auth & User-Scoped Documents](./docs/auth-and-user-scoped-documents.md) — Multi-tenancy, user ownership, and Row-Level Security (RLS).
-- 🏛️ [Architecture Deep Dive](./docs/architecture.md) — DataLoader batching, UUIDv7 indexing, and layer design.
-- 🚢 [Dokploy Deployment Guide](./docs/deployment-dokploy.md) — Production deployment with Traefik and auto SSL.
-- 📋 [Agent Role System Runbook](./docs/runbooks/agent-role-system.md) — Operational execution playbook for autonomous agent workflows.
-- 📋 [Plan to Blueprint Runbook](./docs/runbooks/plan-to-blueprint.md) — Transformation guide from plan to executable blueprints.
-- 💡 [IMDb Dataset & Query Examples](./examples/movies_queries.graphql) — 12 ready-to-use GraphQL queries.
+- [Getting Started Guide](./docs/getting-started.md) — Local setup, environment config, and quickstart.
+- [GraphQL API Reference](./docs/graphql-api.md) — Detailed reference for all queries, mutations, subscriptions, security guards, and metrics.
+- [Relations & Domain Modeling Guide](./docs/relations-and-domain-modeling.md) — 1:1, 1:N relations, virtual collections, and foreign keys.
+- [JWT Auth & User-Scoped Documents](./docs/auth-and-user-scoped-documents.md) — Multi-tenancy, user ownership, and Row-Level Security (RLS).
+- [Architecture Deep Dive](./docs/architecture.md) — DataLoader batching, UUIDv7 indexing, and layer design.
+- [Dokploy Deployment Guide](./docs/deployment-dokploy.md) — Production deployment with Traefik and auto SSL.
+- [Agent Role System Runbook](./docs/runbooks/agent-role-system.md) — Operational execution playbook for autonomous agent workflows.
+- [Plan to Blueprint Runbook](./docs/runbooks/plan-to-blueprint.md) — Transformation guide from plan to executable blueprints.
+- [IMDb Dataset & Query Examples](./examples/movies_queries.graphql) — 12 ready-to-use GraphQL queries.
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### 1. Start CouchDB locally
 
@@ -89,7 +89,7 @@ Open [http://localhost:8080](http://localhost:8080) for the interactive **GraphQ
 
 ---
 
-## 🎬 Testing with the IMDb Dataset Seeder
+## Testing with the IMDb Dataset Seeder
 
 CouchGraph includes an on-demand dataset seeder (`cmd/seed/main.go`) that populates classic movies, directors, foreign key relations, Mango indexes, and MapReduce views:
 
@@ -105,7 +105,7 @@ Once seeded, open [http://localhost:8080](http://localhost:8080) and run queries
 
 ---
 
-## 🛠️ Usage Modes
+## Usage Modes
 
 ### Mode 1: Standalone Schemaless Service (Agnostic)
 
@@ -229,7 +229,7 @@ For full details and patterns, read the [Relations & Domain Modeling Guide](./do
 
 ---
 
-## ⚙️ Configuration Reference
+## Configuration Reference
 
 All settings can be configured via environment variables (e.g. in `.env` or Docker) or a `config.yaml` file:
 
@@ -252,7 +252,7 @@ All settings can be configured via environment variables (e.g. in `.env` or Dock
 
 ---
 
-## 🏛️ Architecture
+## Architecture
 
 ```
 GraphQL Client (Browser / Mobile / Microservice)
@@ -283,7 +283,7 @@ GraphQL Client (Browser / Mobile / Microservice)
 
 ---
 
-## 📦 Project Layout
+## Project Layout
 
 ```
 couchgraph/
@@ -315,7 +315,7 @@ couchgraph/
 
 ---
 
-## 🧪 Testing & Code Quality
+## Testing & Code Quality
 
 ```bash
 # Run all unit tests
@@ -330,7 +330,7 @@ go build ./...
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] Strongly-typed domain schema extensions (1:1 & 1:N relations)
 - [x] DataLoader batching via `_bulk_get` (Zero N+1)
@@ -344,6 +344,6 @@ go build ./...
 
 ---
 
-## 📄 License
+## License
 
 MIT
