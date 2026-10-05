@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/couchgraph-banner.jpg" alt="CouchGraph — GraphQL API layer for CouchDB" width="100%" />
+  <img src="./assets/couchgraph-banner.jpg" alt="CouchGraph — GraphQL API layer for CouchDB" width="640" />
 </p>
 
 # CouchGraph
