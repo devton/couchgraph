@@ -8,8 +8,8 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"github.com/ton/couchgraph/internal/auth"
-	"github.com/ton/couchgraph/internal/config"
+	"github.com/devton/couchgraph/internal/auth"
+	"github.com/devton/couchgraph/internal/config"
 )
 
 // TestMutationGuards validates the logic that blocks mutations in read-only or unauthorized states.

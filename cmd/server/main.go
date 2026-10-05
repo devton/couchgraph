@@ -19,11 +19,11 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
 
-	"github.com/ton/couchgraph/internal/auth"
-	"github.com/ton/couchgraph/internal/config"
-	"github.com/ton/couchgraph/internal/couch"
-	"github.com/ton/couchgraph/internal/graph/generated"
-	"github.com/ton/couchgraph/internal/graph/resolver"
+	"github.com/devton/couchgraph/internal/auth"
+	"github.com/devton/couchgraph/internal/config"
+	"github.com/devton/couchgraph/internal/couch"
+	"github.com/devton/couchgraph/internal/graph/generated"
+	"github.com/devton/couchgraph/internal/graph/resolver"
 )
 
 func main() {

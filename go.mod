@@ -1,4 +1,4 @@
-module github.com/ton/couchgraph
+module github.com/devton/couchgraph
 
 go 1.26
 

@@ -8,9 +8,9 @@ package resolver
 import (
 	"context"
 
-	"github.com/ton/couchgraph/internal/couch"
-	"github.com/ton/couchgraph/internal/graph/generated"
-	"github.com/ton/couchgraph/internal/graph/model"
+	"github.com/devton/couchgraph/internal/couch"
+	"github.com/devton/couchgraph/internal/graph/generated"
+	"github.com/devton/couchgraph/internal/graph/model"
 )
 
 // Movies is the resolver for the movies field on Director (1:N relationship).

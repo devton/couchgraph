@@ -8,8 +8,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/ton/couchgraph/internal/auth"
-	"github.com/ton/couchgraph/internal/config"
+	"github.com/devton/couchgraph/internal/auth"
+	"github.com/devton/couchgraph/internal/config"
 )
 
 func TestUser_CanWrite(t *testing.T) {

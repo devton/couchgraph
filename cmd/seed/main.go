@@ -15,8 +15,8 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/ton/couchgraph/internal/config"
-	"github.com/ton/couchgraph/internal/couch"
+	"github.com/devton/couchgraph/internal/config"
+	"github.com/devton/couchgraph/internal/couch"
 )
 
 type Movie struct {

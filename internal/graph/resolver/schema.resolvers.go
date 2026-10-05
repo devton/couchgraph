@@ -9,9 +9,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ton/couchgraph/internal/couch"
-	"github.com/ton/couchgraph/internal/graph/generated"
-	"github.com/ton/couchgraph/internal/graph/model"
+	"github.com/devton/couchgraph/internal/couch"
+	"github.com/devton/couchgraph/internal/graph/generated"
+	"github.com/devton/couchgraph/internal/graph/model"
 )
 
 // UpsertDoc is the resolver for the upsertDoc field.

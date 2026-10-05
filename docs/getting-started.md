@@ -17,7 +17,7 @@
 ### Step 1: Clone and Setup Configuration
 
 ```bash
-git clone https://github.com/ton/couchgraph.git
+git clone https://github.com/devton/couchgraph.git
 cd couchgraph
 
 # Copy sample environment configuration

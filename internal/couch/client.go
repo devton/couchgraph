@@ -10,7 +10,7 @@ import (
 	kivik "github.com/go-kivik/kivik/v4"
 	"github.com/go-kivik/kivik/v4/couchdb"
 
-	"github.com/ton/couchgraph/internal/config"
+	"github.com/devton/couchgraph/internal/config"
 )
 
 // Client wraps a Kivik client and exposes the active database.

@@ -12,7 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 
-	"github.com/ton/couchgraph/internal/config"
+	"github.com/devton/couchgraph/internal/config"
 )
 
 type contextKey string

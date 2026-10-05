@@ -1,8 +1,8 @@
 package resolver
 
 import (
-	"github.com/ton/couchgraph/internal/couch"
-	"github.com/ton/couchgraph/internal/graph/model"
+	"github.com/devton/couchgraph/internal/couch"
+	"github.com/devton/couchgraph/internal/graph/model"
 )
 
 // This file will not be regenerated automatically.

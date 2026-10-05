@@ -30,7 +30,7 @@ models:
         resolver: true
   Map:
     model:
-      - github.com/ton/couchgraph/internal/graph/scalar.Map
+      - github.com/devton/couchgraph/internal/graph/scalar.Map
 
 # Do not auto-bind models — keep generated and domain models separate
 autobind: []

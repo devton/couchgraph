@@ -14,8 +14,8 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/99designs/gqlgen/plugin/federation/fedruntime"
-	"github.com/ton/couchgraph/internal/graph/model"
-	"github.com/ton/couchgraph/internal/graph/scalar"
+	"github.com/devton/couchgraph/internal/graph/model"
+	"github.com/devton/couchgraph/internal/graph/scalar"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -1660,7 +1660,7 @@ func (ec *executionContext) field_Mutation_bulkDocs_args(ctx context.Context, ra
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
 		func(ctx context.Context, v any) (model.BulkDocsInput, error) {
-			return ec.unmarshalNBulkDocsInput2githubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐBulkDocsInput(ctx, v)
+			return ec.unmarshalNBulkDocsInput2githubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐBulkDocsInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -1674,7 +1674,7 @@ func (ec *executionContext) field_Mutation_deleteDoc_args(ctx context.Context, r
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
 		func(ctx context.Context, v any) (model.DeleteInput, error) {
-			return ec.unmarshalNDeleteInput2githubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDeleteInput(ctx, v)
+			return ec.unmarshalNDeleteInput2githubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDeleteInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -1688,7 +1688,7 @@ func (ec *executionContext) field_Mutation_upsertDoc_args(ctx context.Context, r
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
 		func(ctx context.Context, v any) (model.UpsertInput, error) {
-			return ec.unmarshalNUpsertInput2githubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInput(ctx, v)
+			return ec.unmarshalNUpsertInput2githubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -1758,7 +1758,7 @@ func (ec *executionContext) field_Query_findDocs_args(ctx context.Context, rawAr
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
 		func(ctx context.Context, v any) (model.FindInput, error) {
-			return ec.unmarshalNFindInput2githubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐFindInput(ctx, v)
+			return ec.unmarshalNFindInput2githubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐFindInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -1816,7 +1816,7 @@ func (ec *executionContext) field_Query_queryView_args(ctx context.Context, rawA
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
 		func(ctx context.Context, v any) (model.ViewInput, error) {
-			return ec.unmarshalNViewInput2githubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewInput(ctx, v)
+			return ec.unmarshalNViewInput2githubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -1912,7 +1912,7 @@ func (ec *executionContext) _BulkResult_results(ctx context.Context, field graph
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []*model.MutationResult) graphql.Marshaler {
-			return ec.marshalNMutationResult2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResultᚄ(ctx, selections, v)
+			return ec.marshalNMutationResult2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResultᚄ(ctx, selections, v)
 		},
 		true,
 		true,
@@ -2082,7 +2082,7 @@ func (ec *executionContext) _Director_movies(ctx context.Context, field graphql.
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []*model.Movie) graphql.Marshaler {
-			return ec.marshalNMovie2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovieᚄ(ctx, selections, v)
+			return ec.marshalNMovie2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovieᚄ(ctx, selections, v)
 		},
 		true,
 		true,
@@ -2252,7 +2252,7 @@ func (ec *executionContext) _DocumentChange_doc(ctx context.Context, field graph
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.Document) graphql.Marshaler {
-			return ec.marshalODocument2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, selections, v)
+			return ec.marshalODocument2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, selections, v)
 		},
 		true,
 		false,
@@ -2284,7 +2284,7 @@ func (ec *executionContext) _FindResult_docs(ctx context.Context, field graphql.
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []*model.Document) graphql.Marshaler {
-			return ec.marshalNDocument2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocumentᚄ(ctx, selections, v)
+			return ec.marshalNDocument2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocumentᚄ(ctx, selections, v)
 		},
 		true,
 		true,
@@ -2638,7 +2638,7 @@ func (ec *executionContext) _Movie_director(ctx context.Context, field graphql.C
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.Director) graphql.Marshaler {
-			return ec.marshalODirector2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirector(ctx, selections, v)
+			return ec.marshalODirector2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirector(ctx, selections, v)
 		},
 		true,
 		false,
@@ -2671,7 +2671,7 @@ func (ec *executionContext) _Mutation_upsertDoc(ctx context.Context, field graph
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.MutationResult) graphql.Marshaler {
-			return ec.marshalNMutationResult2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResult(ctx, selections, v)
+			return ec.marshalNMutationResult2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResult(ctx, selections, v)
 		},
 		true,
 		true,
@@ -2715,7 +2715,7 @@ func (ec *executionContext) _Mutation_deleteDoc(ctx context.Context, field graph
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.MutationResult) graphql.Marshaler {
-			return ec.marshalNMutationResult2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResult(ctx, selections, v)
+			return ec.marshalNMutationResult2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResult(ctx, selections, v)
 		},
 		true,
 		true,
@@ -2759,7 +2759,7 @@ func (ec *executionContext) _Mutation_bulkDocs(ctx context.Context, field graphq
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.BulkResult) graphql.Marshaler {
-			return ec.marshalNBulkResult2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐBulkResult(ctx, selections, v)
+			return ec.marshalNBulkResult2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐBulkResult(ctx, selections, v)
 		},
 		true,
 		true,
@@ -2872,7 +2872,7 @@ func (ec *executionContext) _Query_document(ctx context.Context, field graphql.C
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.Document) graphql.Marshaler {
-			return ec.marshalODocument2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, selections, v)
+			return ec.marshalODocument2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, selections, v)
 		},
 		true,
 		false,
@@ -2916,7 +2916,7 @@ func (ec *executionContext) _Query_documents(ctx context.Context, field graphql.
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []*model.Document) graphql.Marshaler {
-			return ec.marshalNDocument2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, selections, v)
+			return ec.marshalNDocument2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, selections, v)
 		},
 		true,
 		true,
@@ -2960,7 +2960,7 @@ func (ec *executionContext) _Query_findDocs(ctx context.Context, field graphql.C
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.FindResult) graphql.Marshaler {
-			return ec.marshalNFindResult2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐFindResult(ctx, selections, v)
+			return ec.marshalNFindResult2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐFindResult(ctx, selections, v)
 		},
 		true,
 		true,
@@ -3004,7 +3004,7 @@ func (ec *executionContext) _Query_queryView(ctx context.Context, field graphql.
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.ViewResult) graphql.Marshaler {
-			return ec.marshalNViewResult2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewResult(ctx, selections, v)
+			return ec.marshalNViewResult2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewResult(ctx, selections, v)
 		},
 		true,
 		true,
@@ -3094,7 +3094,7 @@ func (ec *executionContext) _Query_movie(ctx context.Context, field graphql.Coll
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.Movie) graphql.Marshaler {
-			return ec.marshalOMovie2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovie(ctx, selections, v)
+			return ec.marshalOMovie2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovie(ctx, selections, v)
 		},
 		true,
 		false,
@@ -3138,7 +3138,7 @@ func (ec *executionContext) _Query_movies(ctx context.Context, field graphql.Col
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []*model.Movie) graphql.Marshaler {
-			return ec.marshalNMovie2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovieᚄ(ctx, selections, v)
+			return ec.marshalNMovie2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovieᚄ(ctx, selections, v)
 		},
 		true,
 		true,
@@ -3182,7 +3182,7 @@ func (ec *executionContext) _Query_director(ctx context.Context, field graphql.C
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.Director) graphql.Marshaler {
-			return ec.marshalODirector2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirector(ctx, selections, v)
+			return ec.marshalODirector2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirector(ctx, selections, v)
 		},
 		true,
 		false,
@@ -3225,7 +3225,7 @@ func (ec *executionContext) _Query_directors(ctx context.Context, field graphql.
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []*model.Director) graphql.Marshaler {
-			return ec.marshalNDirector2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirectorᚄ(ctx, selections, v)
+			return ec.marshalNDirector2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirectorᚄ(ctx, selections, v)
 		},
 		true,
 		true,
@@ -3366,7 +3366,7 @@ func (ec *executionContext) _Subscription_docChanges(ctx context.Context, field 
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.DocumentChange) graphql.Marshaler {
-			return ec.marshalNDocumentChange2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocumentChange(ctx, selections, v)
+			return ec.marshalNDocumentChange2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocumentChange(ctx, selections, v)
 		},
 		true,
 		true,
@@ -3409,7 +3409,7 @@ func (ec *executionContext) _ViewResult_rows(ctx context.Context, field graphql.
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []*model.ViewRow) graphql.Marshaler {
-			return ec.marshalNViewRow2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewRowᚄ(ctx, selections, v)
+			return ec.marshalNViewRow2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewRowᚄ(ctx, selections, v)
 		},
 		true,
 		true,
@@ -3556,7 +3556,7 @@ func (ec *executionContext) _ViewRow_doc(ctx context.Context, field graphql.Coll
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.Document) graphql.Marshaler {
-			return ec.marshalODocument2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, selections, v)
+			return ec.marshalODocument2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, selections, v)
 		},
 		true,
 		false,
@@ -4677,7 +4677,7 @@ func (ec *executionContext) unmarshalInputBulkDocsInput(ctx context.Context, obj
 		switch k {
 		case "docs":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("docs"))
-			data, err := ec.unmarshalNUpsertInput2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInputᚄ(ctx, v)
+			data, err := ec.unmarshalNUpsertInput2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6348,12 +6348,12 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNBulkDocsInput2githubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐBulkDocsInput(ctx context.Context, v any) (model.BulkDocsInput, error) {
+func (ec *executionContext) unmarshalNBulkDocsInput2githubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐBulkDocsInput(ctx context.Context, v any) (model.BulkDocsInput, error) {
 	res, err := ec.unmarshalInputBulkDocsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNBulkResult2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐBulkResult(ctx context.Context, sel ast.SelectionSet, v *model.BulkResult) graphql.Marshaler {
+func (ec *executionContext) marshalNBulkResult2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐBulkResult(ctx context.Context, sel ast.SelectionSet, v *model.BulkResult) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6363,16 +6363,16 @@ func (ec *executionContext) marshalNBulkResult2ᚖgithubᚗcomᚋtonᚋcouchgrap
 	return ec._BulkResult(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNDeleteInput2githubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDeleteInput(ctx context.Context, v any) (model.DeleteInput, error) {
+func (ec *executionContext) unmarshalNDeleteInput2githubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDeleteInput(ctx context.Context, v any) (model.DeleteInput, error) {
 	res, err := ec.unmarshalInputDeleteInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNDirector2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirectorᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Director) graphql.Marshaler {
+func (ec *executionContext) marshalNDirector2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirectorᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Director) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalNDirector2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirector(ctx, sel, v[i])
+		return ec.marshalNDirector2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirector(ctx, sel, v[i])
 	})
 
 	for _, e := range ret {
@@ -6384,7 +6384,7 @@ func (ec *executionContext) marshalNDirector2ᚕᚖgithubᚗcomᚋtonᚋcouchgra
 	return ret
 }
 
-func (ec *executionContext) marshalNDirector2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirector(ctx context.Context, sel ast.SelectionSet, v *model.Director) graphql.Marshaler {
+func (ec *executionContext) marshalNDirector2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirector(ctx context.Context, sel ast.SelectionSet, v *model.Director) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6394,21 +6394,21 @@ func (ec *executionContext) marshalNDirector2ᚖgithubᚗcomᚋtonᚋcouchgraph�
 	return ec._Director(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNDocument2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx context.Context, sel ast.SelectionSet, v []*model.Document) graphql.Marshaler {
+func (ec *executionContext) marshalNDocument2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx context.Context, sel ast.SelectionSet, v []*model.Document) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalODocument2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, sel, v[i])
+		return ec.marshalODocument2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, sel, v[i])
 	})
 
 	return ret
 }
 
-func (ec *executionContext) marshalNDocument2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocumentᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Document) graphql.Marshaler {
+func (ec *executionContext) marshalNDocument2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocumentᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Document) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalNDocument2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, sel, v[i])
+		return ec.marshalNDocument2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx, sel, v[i])
 	})
 
 	for _, e := range ret {
@@ -6420,7 +6420,7 @@ func (ec *executionContext) marshalNDocument2ᚕᚖgithubᚗcomᚋtonᚋcouchgra
 	return ret
 }
 
-func (ec *executionContext) marshalNDocument2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx context.Context, sel ast.SelectionSet, v *model.Document) graphql.Marshaler {
+func (ec *executionContext) marshalNDocument2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx context.Context, sel ast.SelectionSet, v *model.Document) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6430,7 +6430,7 @@ func (ec *executionContext) marshalNDocument2ᚖgithubᚗcomᚋtonᚋcouchgraph�
 	return ec._Document(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNDocumentChange2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocumentChange(ctx context.Context, sel ast.SelectionSet, v *model.DocumentChange) graphql.Marshaler {
+func (ec *executionContext) marshalNDocumentChange2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocumentChange(ctx context.Context, sel ast.SelectionSet, v *model.DocumentChange) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6456,12 +6456,12 @@ func (ec *executionContext) marshalNFieldSet2string(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) unmarshalNFindInput2githubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐFindInput(ctx context.Context, v any) (model.FindInput, error) {
+func (ec *executionContext) unmarshalNFindInput2githubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐFindInput(ctx context.Context, v any) (model.FindInput, error) {
 	res, err := ec.unmarshalInputFindInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNFindResult2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐFindResult(ctx context.Context, sel ast.SelectionSet, v *model.FindResult) graphql.Marshaler {
+func (ec *executionContext) marshalNFindResult2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐFindResult(ctx context.Context, sel ast.SelectionSet, v *model.FindResult) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6570,11 +6570,11 @@ func (ec *executionContext) marshalNMap2interface(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) marshalNMovie2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovieᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Movie) graphql.Marshaler {
+func (ec *executionContext) marshalNMovie2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovieᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Movie) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalNMovie2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovie(ctx, sel, v[i])
+		return ec.marshalNMovie2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovie(ctx, sel, v[i])
 	})
 
 	for _, e := range ret {
@@ -6586,7 +6586,7 @@ func (ec *executionContext) marshalNMovie2ᚕᚖgithubᚗcomᚋtonᚋcouchgraph�
 	return ret
 }
 
-func (ec *executionContext) marshalNMovie2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v *model.Movie) graphql.Marshaler {
+func (ec *executionContext) marshalNMovie2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v *model.Movie) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6596,11 +6596,11 @@ func (ec *executionContext) marshalNMovie2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋi
 	return ec._Movie(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNMutationResult2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResultᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.MutationResult) graphql.Marshaler {
+func (ec *executionContext) marshalNMutationResult2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResultᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.MutationResult) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalNMutationResult2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResult(ctx, sel, v[i])
+		return ec.marshalNMutationResult2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResult(ctx, sel, v[i])
 	})
 
 	for _, e := range ret {
@@ -6612,7 +6612,7 @@ func (ec *executionContext) marshalNMutationResult2ᚕᚖgithubᚗcomᚋtonᚋco
 	return ret
 }
 
-func (ec *executionContext) marshalNMutationResult2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResult(ctx context.Context, sel ast.SelectionSet, v *model.MutationResult) graphql.Marshaler {
+func (ec *executionContext) marshalNMutationResult2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMutationResult(ctx context.Context, sel ast.SelectionSet, v *model.MutationResult) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6667,18 +6667,18 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	return ret
 }
 
-func (ec *executionContext) unmarshalNUpsertInput2githubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInput(ctx context.Context, v any) (model.UpsertInput, error) {
+func (ec *executionContext) unmarshalNUpsertInput2githubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInput(ctx context.Context, v any) (model.UpsertInput, error) {
 	res, err := ec.unmarshalInputUpsertInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNUpsertInput2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInputᚄ(ctx context.Context, v any) ([]*model.UpsertInput, error) {
+func (ec *executionContext) unmarshalNUpsertInput2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInputᚄ(ctx context.Context, v any) ([]*model.UpsertInput, error) {
 	vSlice := graphql.CoerceList(v)
 	var err error
 	res := make([]*model.UpsertInput, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNUpsertInput2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInput(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNUpsertInput2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -6686,17 +6686,17 @@ func (ec *executionContext) unmarshalNUpsertInput2ᚕᚖgithubᚗcomᚋtonᚋcou
 	return res, nil
 }
 
-func (ec *executionContext) unmarshalNUpsertInput2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInput(ctx context.Context, v any) (*model.UpsertInput, error) {
+func (ec *executionContext) unmarshalNUpsertInput2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐUpsertInput(ctx context.Context, v any) (*model.UpsertInput, error) {
 	res, err := ec.unmarshalInputUpsertInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNViewInput2githubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewInput(ctx context.Context, v any) (model.ViewInput, error) {
+func (ec *executionContext) unmarshalNViewInput2githubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewInput(ctx context.Context, v any) (model.ViewInput, error) {
 	res, err := ec.unmarshalInputViewInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNViewResult2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewResult(ctx context.Context, sel ast.SelectionSet, v *model.ViewResult) graphql.Marshaler {
+func (ec *executionContext) marshalNViewResult2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewResult(ctx context.Context, sel ast.SelectionSet, v *model.ViewResult) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -6706,11 +6706,11 @@ func (ec *executionContext) marshalNViewResult2ᚖgithubᚗcomᚋtonᚋcouchgrap
 	return ec._ViewResult(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNViewRow2ᚕᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewRowᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ViewRow) graphql.Marshaler {
+func (ec *executionContext) marshalNViewRow2ᚕᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewRowᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ViewRow) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
 		fc.Result = &v[i]
-		return ec.marshalNViewRow2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewRow(ctx, sel, v[i])
+		return ec.marshalNViewRow2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewRow(ctx, sel, v[i])
 	})
 
 	for _, e := range ret {
@@ -6722,7 +6722,7 @@ func (ec *executionContext) marshalNViewRow2ᚕᚖgithubᚗcomᚋtonᚋcouchgrap
 	return ret
 }
 
-func (ec *executionContext) marshalNViewRow2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewRow(ctx context.Context, sel ast.SelectionSet, v *model.ViewRow) graphql.Marshaler {
+func (ec *executionContext) marshalNViewRow2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐViewRow(ctx context.Context, sel ast.SelectionSet, v *model.ViewRow) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -7054,14 +7054,14 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalODirector2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirector(ctx context.Context, sel ast.SelectionSet, v *model.Director) graphql.Marshaler {
+func (ec *executionContext) marshalODirector2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDirector(ctx context.Context, sel ast.SelectionSet, v *model.Director) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Director(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalODocument2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx context.Context, sel ast.SelectionSet, v *model.Document) graphql.Marshaler {
+func (ec *executionContext) marshalODocument2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐDocument(ctx context.Context, sel ast.SelectionSet, v *model.Document) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -7209,7 +7209,7 @@ func (ec *executionContext) marshalOMap2ᚕinterfaceᚄ(ctx context.Context, sel
 	return ret
 }
 
-func (ec *executionContext) marshalOMovie2ᚖgithubᚗcomᚋtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v *model.Movie) graphql.Marshaler {
+func (ec *executionContext) marshalOMovie2ᚖgithubᚗcomᚋdevtonᚋcouchgraphᚋinternalᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v *model.Movie) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
