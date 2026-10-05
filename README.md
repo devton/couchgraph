@@ -23,11 +23,14 @@ CouchGraph exposes CouchDB through a modern GraphQL API — eliminating REST boi
 
 ## 📚 Documentation & Guides
 
-- 📘 [Relations & Domain Modeling Guide](file:///Users/ton/work/couchgraph/docs/relations-and-domain-modeling.md) — 1:1, 1:N relations, virtual collections, and foreign keys.
 - 🚀 [Getting Started Guide](file:///Users/ton/work/couchgraph/docs/getting-started.md) — Local setup, environment config, and quickstart.
-- 📖 [GraphQL API Reference](file:///Users/ton/work/couchgraph/docs/graphql-api.md) — Detailed reference for all queries, mutations, scalars, and inputs.
+- 📖 [GraphQL API Reference](file:///Users/ton/work/couchgraph/docs/graphql-api.md) — Detailed reference for all queries, mutations, subscriptions, security guards, and metrics.
+- 📘 [Relations & Domain Modeling Guide](file:///Users/ton/work/couchgraph/docs/relations-and-domain-modeling.md) — 1:1, 1:N relations, virtual collections, and foreign keys.
+- 🛡️ [JWT Auth & User-Scoped Documents](file:///Users/ton/work/couchgraph/docs/auth-and-user-scoped-documents.md) — Multi-tenancy, user ownership, and Row-Level Security (RLS).
 - 🏛️ [Architecture Deep Dive](file:///Users/ton/work/couchgraph/docs/architecture.md) — DataLoader batching, UUIDv7 indexing, and layer design.
 - 🚢 [Dokploy Deployment Guide](file:///Users/ton/work/couchgraph/docs/deployment-dokploy.md) — Production deployment with Traefik and auto SSL.
+- 📋 [Agent Role System Runbook](file:///Users/ton/work/couchgraph/docs/runbooks/agent-role-system.md) — Operational execution playbook for autonomous agent workflows.
+- 📋 [Plan to Blueprint Runbook](file:///Users/ton/work/couchgraph/docs/runbooks/plan-to-blueprint.md) — Transformation guide from plan to executable blueprints.
 - 💡 [IMDb Dataset & Query Examples](file:///Users/ton/work/couchgraph/examples/movies_queries.graphql) — 12 ready-to-use GraphQL queries.
 
 ---
