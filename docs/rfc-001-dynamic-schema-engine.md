@@ -2,7 +2,7 @@
 
 | Field   | Value                                   |
 |---------|-----------------------------------------|
-| Status  | Draft — Step 1 (prototype) in progress  |
+| Status  | Steps 1–3 implemented (engine, directives, CLI); Steps 4–5 pending |
 | Authors | CouchGraph maintainers                  |
 | Created | 2026-10-06                              |
 
@@ -251,6 +251,8 @@ Distribution: goreleaser binaries, Homebrew tap, Docker image `ghcr.io/devton/co
 | 1. Prototype | `internal/engine` serving the current core schema; `ENGINE=dynamic` switch in `cmd/server` | Parity tests: identical queries return identical JSON on both engines (incl. introspection, errors, subscriptions). If parity fails, stop cheaply |
 | 2. Directives | `couchgraph.yaml`, directive compiler, `examples/movies` migrated | Movies example served with zero Go code |
 | 3. CLI | `init`, `serve --watch`, `validate`, `sync` | End-to-end quickstart without Go toolchain |
+
+**Progress:** Step 1 done (parity suite in `internal/engine`, ~13% overhead vs generated code). Step 2 done (`examples/movies`, directive compiler, per-operation batch loader). Step 3 partially done: `init`, `serve`, `validate`, `sync` (`--watch` and Mango index sync pending). Apollo Federation is out of scope for the dynamic engine.
 | 4. JS resolvers | goja runtime with timeouts and `ctx.couch` | `@js` fields work, sandbox tests pass |
 | 5. Go library | `pkg/couchgraph` public API | Movies example re-implemented with native Go resolvers on the same engine |
 
