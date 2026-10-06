@@ -15,7 +15,7 @@ import (
 //
 // A new Loader must be created per-request (not shared across requests).
 type Loader struct {
-	repo *Repository
+	repo BulkGetter
 
 	mu    sync.Mutex
 	batch []loadRequest
@@ -36,7 +36,7 @@ type LoadResult struct {
 }
 
 // NewLoader creates a per-request document loader.
-func NewLoader(repo *Repository) *Loader {
+func NewLoader(repo BulkGetter) *Loader {
 	return &Loader{
 		repo: repo,
 		done: make(chan struct{}),

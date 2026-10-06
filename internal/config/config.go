@@ -27,6 +27,9 @@ type ServerConfig struct {
 	PlaygroundEnabled bool `mapstructure:"playground_enabled"`
 	// ReadOnly disables all GraphQL mutations globally across the server. Default: false.
 	ReadOnly bool `mapstructure:"read_only"`
+	// Engine selects the GraphQL execution engine: "gqlgen" (generated, default)
+	// or "dynamic" (runtime schema engine, see docs/rfc-001-dynamic-schema-engine.md).
+	Engine string `mapstructure:"engine"`
 }
 
 // AuthConfig controls JWT authentication and mutation role enforcement.
@@ -79,6 +82,7 @@ func Load() (*Config, error) {
 	v.SetDefault("server.port", 8080)
 	v.SetDefault("server.playground_enabled", true)
 	v.SetDefault("server.read_only", false)
+	v.SetDefault("server.engine", "gqlgen")
 	v.SetDefault("auth.enabled", false)
 	v.SetDefault("auth.jwt_secret", "")
 	v.SetDefault("auth.require_auth", false)
@@ -134,6 +138,9 @@ func Load() (*Config, error) {
 	}
 	if val := os.Getenv("MUTATIONS_ENABLED"); val != "" {
 		cfg.Server.ReadOnly = !(val == "true" || val == "1")
+	}
+	if val := os.Getenv("ENGINE"); val != "" {
+		cfg.Server.Engine = val
 	}
 	if val := os.Getenv("AUTH_ENABLED"); val != "" {
 		cfg.Auth.Enabled = val == "true" || val == "1"

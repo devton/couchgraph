@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
@@ -20,6 +21,7 @@ import (
 	"github.com/devton/couchgraph/internal/auth"
 	"github.com/devton/couchgraph/internal/config"
 	"github.com/devton/couchgraph/internal/couch"
+	"github.com/devton/couchgraph/internal/engine"
 	"github.com/devton/couchgraph/internal/graph/generated"
 	"github.com/devton/couchgraph/internal/graph/resolver"
 )
@@ -73,9 +75,27 @@ func main() {
 	repo := couch.NewRepository(couchClient)
 
 	// ── GraphQL Server ────────────────────────────────────────────────────
-	schema := generated.NewExecutableSchema(generated.Config{
-		Resolvers: &resolver.Resolver{Repo: repo},
-	})
+	var schema graphql.ExecutableSchema
+	switch cfg.Server.Engine {
+	case "", "gqlgen":
+		schema = generated.NewExecutableSchema(generated.Config{
+			Resolvers: &resolver.Resolver{Repo: repo},
+		})
+	case "dynamic":
+		// RFC-001 Step 1: core API only (the movies example moves to SDL
+		// directives in Step 2).
+		dyn, err := engine.NewCore(repo)
+		if err != nil {
+			log.Fatal("failed to build dynamic schema", zap.Error(err))
+		}
+		if err := dyn.Check(); err != nil {
+			log.Fatal("dynamic schema is incomplete", zap.Error(err))
+		}
+		schema = dyn
+	default:
+		log.Fatal("unknown ENGINE (expected gqlgen or dynamic)", zap.String("engine", cfg.Server.Engine))
+	}
+	log.Info("GraphQL engine selected", zap.String("engine", cfg.Server.Engine))
 
 	srv := handler.NewDefaultServer(schema)
 

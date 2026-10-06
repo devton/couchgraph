@@ -12,7 +12,7 @@ import (
 // Resolver is the root resolver. It holds shared dependencies injected at startup.
 type Resolver struct {
 	// Repo provides all CouchDB operations.
-	Repo *couch.Repository
+	Repo couch.Store
 }
 
 // rawToDocument converts a raw CouchDB map into a GraphQL Document model.
