@@ -48,6 +48,7 @@ CouchGraph exposes CouchDB through a modern GraphQL API — eliminating REST boi
 - [JWT Auth & User-Scoped Documents](./docs/auth-and-user-scoped-documents.md) — Multi-tenancy, user ownership, and Row-Level Security (RLS).
 - [Architecture Deep Dive](./docs/architecture.md) — DataLoader batching, UUIDv7 indexing, and layer design.
 - [Dokploy Deployment Guide](./docs/deployment-dokploy.md) — Production deployment with Traefik and auto SSL.
+- [RFC-001: Dynamic Schema Engine](./docs/rfc-001-dynamic-schema-engine.md) — Standalone, config-driven mode: SDL directives, JS resolvers, CLI, and Go library API.
 - [Agent Role System Runbook](./docs/runbooks/agent-role-system.md) — Operational execution playbook for autonomous agent workflows.
 - [Plan to Blueprint Runbook](./docs/runbooks/plan-to-blueprint.md) — Transformation guide from plan to executable blueprints.
 - [IMDb Dataset & Query Examples](./examples/movies_queries.graphql) — 12 ready-to-use GraphQL queries.
@@ -341,6 +342,10 @@ go build ./...
 - [x] Prometheus metrics endpoint (`/metrics`)
 - [ ] Full-Text Search Integration (CouchDB Nouveau / Lucene `_nouveau` & Mango `$text` operator)
 - [ ] Multi-database support: optional `COUCHDB_DATABASE` (default only), per-request database via `db` argument on generic operations, `COUCHDB_ALLOWED_DATABASES` allowlist with system databases (`_*`) always blocked, and DataLoader keyed by `db + id`
+- [ ] Standalone config-driven mode: dynamic schema engine + SDL directives (`@collection`, `@get`, `@find`, `@view`, `@belongsTo`, `@hasMany`) via `couchgraph.yaml` ([RFC-001](./docs/rfc-001-dynamic-schema-engine.md))
+- [ ] CLI: `couchgraph init`, `serve --watch`, `validate`, `sync` (design docs & Mango indexes)
+- [ ] JavaScript resolvers (goja sandbox) for custom logic without Go
+- [ ] Public Go library API (`pkg/couchgraph`) for native resolvers on the same engine
 - [ ] OpenTelemetry tracing
 
 ---

@@ -52,5 +52,6 @@
 ## Runbooks & Architecture Guides
 - [`docs/relations-and-domain-modeling.md`](file:///Users/ton/work/couchgraph/docs/relations-and-domain-modeling.md) — Relations, domain modeling, and virtual collections guide
 - [`docs/auth-and-user-scoped-documents.md`](file:///Users/ton/work/couchgraph/docs/auth-and-user-scoped-documents.md) — JWT auth, user-scoped documents, and Row-Level Security
+- [`docs/rfc-001-dynamic-schema-engine.md`](file:///Users/ton/work/couchgraph/docs/rfc-001-dynamic-schema-engine.md) — Dynamic schema engine RFC (standalone config-driven mode, directives, JS resolvers, CLI)
 - [`docs/runbooks/agent-role-system.md`](file:///Users/ton/work/couchgraph/docs/runbooks/agent-role-system.md) — Operational execution playbook
 - [`docs/runbooks/plan-to-blueprint.md`](file:///Users/ton/work/couchgraph/docs/runbooks/plan-to-blueprint.md) — Plan-to-blueprint transformation
