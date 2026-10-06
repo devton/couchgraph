@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Verify go.mod is tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l ./cmd ./internal)
+          if [ -n "$unformatted" ]; then
+            echo "Run gofmt -w on:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test (race)
+        run: go test -race -count=1 ./...
+
+      - name: Validate example projects
+        run: |
+          go run ./cmd/couchgraph validate -c examples/movies/couchgraph.yaml
+
+  build:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Cross build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          version="${GITHUB_REF_NAME}"
+          [ "${GITHUB_REF_TYPE}" = "tag" ] || version="dev-${GITHUB_SHA::7}"
+          ext=""; [ "$GOOS" = "windows" ] && ext=".exe"
+          name="couchgraph_${version}_${GOOS}_${GOARCH}"
+          mkdir -p "dist/$name"
+          go build -trimpath -ldflags "-s -w -X main.version=${version}" -o "dist/$name/couchgraph${ext}" ./cmd/couchgraph
+          go build -trimpath -ldflags "-s -w" -o "dist/$name/couchgraph-server${ext}" ./cmd/server
+          cp README.md "dist/$name/"
+          if [ "$GOOS" = "windows" ]; then
+            (cd dist && zip -qr "$name.zip" "$name")
+          else
+            tar -C dist -czf "dist/$name.tar.gz" "$name"
+          fi
+          rm -rf "dist/$name"
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: couchgraph-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: cd dist && sha256sum * > checksums.txt && cat checksums.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
