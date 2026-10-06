@@ -11,8 +11,8 @@ import (
 // Document is the generic CouchDB document representation used across the
 // repository layer. It mirrors the GraphQL Document type.
 type Document struct {
-	ID  string         `json:"_id"`
-	Rev string         `json:"_rev,omitempty"`
+	ID   string         `json:"_id"`
+	Rev  string         `json:"_rev,omitempty"`
 	Data map[string]any `json:"-"` // populated manually from raw map
 }
 
