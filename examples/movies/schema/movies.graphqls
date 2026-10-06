@@ -1,0 +1,68 @@
+"""
+A movie document: { "type": "movie", "title": "...", "runtime_minutes": 142, "director_id": "...", ... }
+Fields are read by name, then `_id` for `id`, then snake_case (runtimeMinutes → runtime_minutes).
+"""
+type Movie @collection(type: "movie") {
+  id: ID!
+  title: String!
+  year: Int!
+  rating: Float!
+  votes: Int!
+  runtimeMinutes: Int!
+  genres: [String!]!
+  cast: [String!]!
+  plot: String!
+  "Renamed field: read from the document key box_office_usd."
+  boxOffice: Int @field(from: "box_office_usd")
+  directorId: ID
+  "1:1 relation, batched across all movies in the response (single _bulk_get)."
+  director: Director @belongsTo(field: "director_id")
+}
+
+"""A director document: { "type": "director", "name": "...", "birth_year": 1970, ... }"""
+type Director @collection(type: "director") {
+  id: ID!
+  name: String!
+  birthYear: Int!
+  nationality: String!
+  knownFor: [String!]!
+  "1:N relation through the movies/by_director_id view (keyed by the director _id)."
+  movies: [Movie!]! @hasMany(view: "movies/by_director_id")
+}
+
+"""Grouped _count reduce row."""
+type GenreCount {
+  genre: String! @field(from: "key")
+  movies: Int! @field(from: "value")
+}
+
+"""Grouped _stats reduce row."""
+type GenreBoxOffice {
+  genre: String! @field(from: "key")
+  movies: Int! @field(from: "value.count")
+  total: Float! @field(from: "value.sum")
+  min: Float! @field(from: "value.min")
+  max: Float! @field(from: "value.max")
+}
+
+extend type Query {
+  "One movie by ID (batched _bulk_get, type-checked against @collection)."
+  movie(id: ID!): Movie @get
+
+  "Mango query. Optional filters are dropped when their argument is not provided."
+  movies(genre: String, minRating: Float, limit: Int = 20): [Movie!]!
+    @find(selector: "{\"genres\": {\"$elemMatch\": {\"$eq\": \"$genre\"}}, \"rating\": {\"$gte\": \"$minRating\"}}")
+
+  "Movies released in a year, via the movies/by_year view."
+  moviesByYear(year: Int!): [Movie!]! @view(name: "movies/by_year", key: "$year", includeDocs: true)
+
+  director(id: ID!): Director @get
+
+  directors: [Director!]! @view(name: "movies/all_directors")
+
+  "Number of movies per genre (_count reduce, grouped)."
+  genreCounts: [GenreCount!]! @view(name: "movies/by_genre", reduce: true, group: true)
+
+  "Box office statistics per genre (_stats reduce, grouped)."
+  boxOfficeByGenre: [GenreBoxOffice!]! @view(name: "movies/box_office_by_genre", reduce: true, group: true)
+}

@@ -120,7 +120,8 @@ func (x *executor) object(ctx context.Context, def *ast.Definition, sel ast.Sele
 		}
 		// Like gqlgen: fields with a user resolver run concurrently, plain
 		// property reads run inline.
-		if _, ok := x.engine.resolvers[def.Name+"."+field.Name]; ok {
+		coord := def.Name + "." + field.Name
+		if _, ok := x.engine.resolvers[coord]; ok && !x.engine.inline[coord] {
 			out.Concurrently(i, resolve)
 		} else {
 			out.Values[i] = resolve(ctx)

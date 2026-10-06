@@ -58,6 +58,8 @@ type Engine struct {
 	streams      map[string]StreamFunc
 	scalars      map[string]ScalarCodec
 	implementors map[string][]string
+	inline       map[string]bool
+	scopes       []func(context.Context) context.Context
 }
 
 var _ graphql.ExecutableSchema = (*Engine)(nil)
@@ -79,6 +81,7 @@ func New(schema *ast.Schema) *Engine {
 		streams:      make(map[string]StreamFunc),
 		scalars:      make(map[string]ScalarCodec),
 		implementors: make(map[string][]string),
+		inline:       make(map[string]bool),
 	}
 	// Precompute the "satisfies" list used by graphql.CollectFields for each
 	// object type: the type itself, its interfaces and the unions containing it.
@@ -103,6 +106,27 @@ func New(schema *ast.Schema) *Engine {
 
 // Resolve registers a resolver for a field coordinate such as "Query.document".
 func (e *Engine) Resolve(coord string, fn ResolverFunc) { e.resolvers[coord] = fn }
+
+// ResolveProperty registers a cheap, non-blocking resolver (e.g. a renamed or
+// nested property read). Unlike Resolve, it runs inline instead of in its own
+// goroutine.
+func (e *Engine) ResolveProperty(coord string, fn ResolverFunc) {
+	e.resolvers[coord] = fn
+	e.inline[coord] = true
+}
+
+// WithRequestScope registers a function that decorates the context of every
+// operation before execution (e.g. to attach a per-request DataLoader).
+func (e *Engine) WithRequestScope(fn func(context.Context) context.Context) {
+	e.scopes = append(e.scopes, fn)
+}
+
+func (e *Engine) scope(ctx context.Context) context.Context {
+	for _, fn := range e.scopes {
+		ctx = fn(ctx)
+	}
+	return ctx
+}
 
 // Subscribe registers a stream resolver for a subscription field coordinate
 // such as "Subscription.docChanges".
@@ -192,6 +216,7 @@ func (e *Engine) Exec(ctx context.Context) graphql.ResponseHandler {
 				return nil
 			}
 			first = false
+			ctx = e.scope(ctx)
 			data := x.root(ctx, root, oc.Operation.SelectionSet, serial)
 			var buf bytes.Buffer
 			data.MarshalGQL(&buf)
@@ -199,6 +224,7 @@ func (e *Engine) Exec(ctx context.Context) graphql.ResponseHandler {
 		}
 
 	case ast.Subscription:
+		ctx = e.scope(ctx)
 		next := x.subscription(ctx, oc.Operation.SelectionSet)
 		if next == nil {
 			// Errors were recorded on ctx and are attached by the gqlgen executor.

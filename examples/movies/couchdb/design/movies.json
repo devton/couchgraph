@@ -1,0 +1,34 @@
+{
+  "language": "javascript",
+  "views": {
+    "by_genre": {
+      "map": "function (doc) { if (doc.type === 'movie' && Array.isArray(doc.genres)) { doc.genres.forEach(function (g) { emit(g, { title: doc.title, year: doc.year, rating: doc.rating }); }); } }",
+      "reduce": "_count"
+    },
+    "by_year": {
+      "map": "function (doc) { if (doc.type === 'movie' && doc.year) { emit(doc.year, { title: doc.title, rating: doc.rating }); } }",
+      "reduce": "_count"
+    },
+    "top_rated": {
+      "map": "function (doc) { if (doc.type === 'movie' && doc.rating) { emit(doc.rating, { title: doc.title, year: doc.year }); } }",
+      "reduce": "_count"
+    },
+    "ratings_stats": {
+      "map": "function (doc) { if (doc.type === 'movie' && Array.isArray(doc.genres) && typeof doc.rating === 'number') { doc.genres.forEach(function (g) { emit(g, doc.rating); }); } }",
+      "reduce": "_stats"
+    },
+    "box_office_by_genre": {
+      "map": "function (doc) { if (doc.type === 'movie' && Array.isArray(doc.genres) && typeof doc.box_office_usd === 'number') { doc.genres.forEach(function (g) { emit(g, doc.box_office_usd); }); } }",
+      "reduce": "_stats"
+    },
+    "all_movies": {
+      "map": "function (doc) { if (doc.type === 'movie') { emit(doc._id, doc); } }"
+    },
+    "all_directors": {
+      "map": "function (doc) { if (doc.type === 'director') { emit(doc._id, doc); } }"
+    },
+    "by_director_id": {
+      "map": "function (doc) { if (doc.type === 'movie' && doc.director_id) { emit(doc.director_id, doc); } }"
+    }
+  }
+}

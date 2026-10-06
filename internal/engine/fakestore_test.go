@@ -33,11 +33,16 @@ func newFakeStore() *fakeStore {
 		"0190a1b2-0000-7000-8000-000000000002": {
 			"_id": "0190a1b2-0000-7000-8000-000000000002", "_rev": "3-b",
 			"type": "movie", "title": "Parasite", "year": float64(2019), "rating": 8.5,
-			"genres": []any{"Drama"}, "nested": map[string]any{"z": 1.5, "a": []any{true, nil, "x"}},
+			"director_id": "0190a1b2-0000-7000-8000-0000000000d2",
+			"genres":      []any{"Drama"}, "nested": map[string]any{"z": 1.5, "a": []any{true, nil, "x"}},
 		},
 		"0190a1b2-0000-7000-8000-0000000000d1": {
 			"_id": "0190a1b2-0000-7000-8000-0000000000d1", "_rev": "2-c",
 			"type": "director", "name": "Lana Wachowski",
+		},
+		"0190a1b2-0000-7000-8000-0000000000d2": {
+			"_id": "0190a1b2-0000-7000-8000-0000000000d2", "_rev": "1-d",
+			"type": "director", "name": "Bong Joon-ho", "birth_year": float64(1969),
 		},
 	}
 	return &fakeStore{

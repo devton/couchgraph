@@ -1,0 +1,49 @@
+"""
+Maps an object type to the CouchDB documents whose discriminator field equals `type`.
+Used by @get (type check) and @find (discriminator added to the selector automatically).
+"""
+directive @collection(type: String!, field: String = "type") on OBJECT
+
+"""
+Reads the field from another document key. Dot paths are allowed (e.g. "value.min").
+Without it, fields are read by name, then `_id` for `id`, then the snake_case form.
+"""
+directive @field(from: String!) on FIELD_DEFINITION
+
+"""
+Fetches one document by ID (the `id` argument by default), batched via _bulk_get.
+"""
+directive @get(arg: String = "id") on FIELD_DEFINITION
+
+"""
+Runs a Mango _find query. `selector` and `sort` are JSON. String values "$arg" are
+replaced by field arguments; entries whose argument is absent are dropped.
+Field arguments named limit, skip and bookmark are applied automatically.
+"""
+directive @find(selector: String = "{}", sort: String, limit: Int) on FIELD_DEFINITION
+
+"""
+Queries a MapReduce view ("designDoc/viewName"). `key` is JSON or a "$arg" placeholder.
+Rows become: reduce rows {key, value}; otherwise the included doc, the emitted object
+value, or {id, key, value}. Field arguments named limit, skip and descending are applied.
+"""
+directive @view(
+  name: String!
+  key: String
+  reduce: Boolean = false
+  group: Boolean
+  groupLevel: Int
+  includeDocs: Boolean = false
+  descending: Boolean
+) on FIELD_DEFINITION
+
+"""
+1:1 relation: loads the document whose _id is stored in the parent's `field` (batched).
+A list of IDs is supported for list fields.
+"""
+directive @belongsTo(field: String!) on FIELD_DEFINITION
+
+"""
+1:N relation: queries `view` ("designDoc/viewName") with `key` (default: the parent _id).
+"""
+directive @hasMany(view: String!, key: String = "$parent.id") on FIELD_DEFINITION

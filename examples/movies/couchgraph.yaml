@@ -1,0 +1,20 @@
+couchdb:
+  url: ${COUCHDB_URL:-http://localhost:5984}
+  user: ${COUCHDB_USER:-admin}
+  password: ${COUCHDB_PASSWORD:-password}
+  database: ${COUCHDB_DATABASE:-couchgraph_movies}
+
+schema:
+  core: true            # keep the generic API (document, findDocs, queryView, ...) next to the typed one
+  paths:
+    - schema/**/*.graphqls
+
+designDocs:
+  paths:
+    - couchdb/design/*.json
+  sync: on-start        # push views when the server starts (or run `couchgraph sync`)
+
+server:
+  port: ${PORT:-8080}
+  playground: true
+  readOnly: true        # read-only demo API

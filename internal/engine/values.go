@@ -109,7 +109,7 @@ func defaultResolve(parent any, fd *ast.FieldDefinition, args map[string]any) (a
 	case nil:
 		return nil, nil
 	case map[string]any:
-		return p[fd.Name], nil
+		return LookupKey(p, fd.Name), nil
 	}
 
 	rv := reflect.ValueOf(parent)
@@ -309,4 +309,48 @@ func (e *Engine) unmarshalScalar(name string, v any) (any, error) {
 		// Map and unknown custom scalars: arbitrary JSON.
 		return scalar.UnmarshalMap(v)
 	}
+}
+
+// LookupKey reads a GraphQL field from a CouchDB document map: the exact key
+// first, then "_id" for "id", then the snake_case form of a camelCase name
+// (runtimeMinutes → runtime_minutes).
+func LookupKey(m map[string]any, name string) any {
+	if v, ok := m[name]; ok {
+		return v
+	}
+	if name == "id" {
+		return m["_id"]
+	}
+	if snake := toSnake(name); snake != name {
+		return m[snake]
+	}
+	return nil
+}
+
+// LookupPath reads a dot-separated path ("value.min") from nested maps; each
+// segment uses LookupKey semantics.
+func LookupPath(v any, path string) any {
+	for _, seg := range strings.Split(path, ".") {
+		m, ok := v.(map[string]any)
+		if !ok {
+			return nil
+		}
+		v = LookupKey(m, seg)
+	}
+	return v
+}
+
+func toSnake(s string) string {
+	var b strings.Builder
+	for i, r := range s {
+		if unicode.IsUpper(r) {
+			if i > 0 {
+				b.WriteByte('_')
+			}
+			b.WriteRune(unicode.ToLower(r))
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }
