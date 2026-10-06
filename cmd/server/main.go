@@ -10,13 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
 
 	"github.com/devton/couchgraph/internal/auth"
@@ -95,33 +93,7 @@ func main() {
 	srv.Use(extension.Introspection{})
 
 	// ── Mutation Guard & Auth Enforcement ─────────────────────────────────
-	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
-		oc := graphql.GetOperationContext(ctx)
-		if oc.Operation != nil && oc.Operation.Operation == ast.Mutation {
-			// 1. Global Read-Only Mode Check
-			if cfg.Server.ReadOnly {
-				return func(ctx context.Context) *graphql.Response {
-					return graphql.ErrorResponse(ctx, "server is in read-only mode: mutations are disabled")
-				}
-			}
-
-			// 2. JWT Auth & Mutation Role Check (when Auth is enabled)
-			if cfg.Auth.Enabled {
-				user := auth.ForContext(ctx)
-				if user == nil {
-					return func(ctx context.Context) *graphql.Response {
-						return graphql.ErrorResponse(ctx, "unauthorized: authentication required to execute mutations")
-					}
-				}
-				if !user.CanWrite() {
-					return func(ctx context.Context) *graphql.Response {
-						return graphql.ErrorResponse(ctx, "forbidden: write permissions required to execute mutations")
-					}
-				}
-			}
-		}
-		return next(ctx)
-	})
+	srv.AroundOperations(auth.MutationGuard(cfg.Server.ReadOnly, cfg.Auth))
 
 	mux := http.NewServeMux()
 

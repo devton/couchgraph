@@ -12,7 +12,8 @@ import (
 	"github.com/devton/couchgraph/internal/config"
 )
 
-// TestMutationGuards validates the logic that blocks mutations in read-only or unauthorized states.
+// TestMutationGuards exercises auth.MutationGuard (the middleware wired in
+// cmd/server) for read-only and unauthorized states.
 func TestMutationGuards(t *testing.T) {
 	secret := "jwt-super-secret-key-for-test"
 
@@ -39,7 +40,7 @@ func TestMutationGuards(t *testing.T) {
 			},
 			isMutation:    true,
 			shouldBlock:   true,
-			expectedError: "server is in read-only mode: mutations are disabled",
+			expectedError: auth.ErrReadOnly,
 		},
 		{
 			name: "Mutation blocked when Auth enabled and user is unauthenticated",
@@ -49,7 +50,7 @@ func TestMutationGuards(t *testing.T) {
 			userToken:     nil,
 			isMutation:    true,
 			shouldBlock:   true,
-			expectedError: "unauthorized: authentication required to execute mutations",
+			expectedError: auth.ErrUnauthorized,
 		},
 		{
 			name: "Mutation blocked when user has only reader role",
@@ -59,7 +60,7 @@ func TestMutationGuards(t *testing.T) {
 			userToken:     &auth.User{Roles: []string{"reader"}, Scopes: []string{"read"}},
 			isMutation:    true,
 			shouldBlock:   true,
-			expectedError: "forbidden: write permissions required to execute mutations",
+			expectedError: auth.ErrForbidden,
 		},
 		{
 			name: "Mutation allowed when user has admin role",
@@ -92,39 +93,38 @@ func TestMutationGuards(t *testing.T) {
 			if tt.userToken != nil {
 				ctx = auth.WithUser(ctx, tt.userToken)
 			}
+			ctx = graphql.WithOperationContext(ctx, &graphql.OperationContext{
+				Operation: &ast.OperationDefinition{Operation: opType},
+			})
+			ctx = graphql.WithResponseContext(ctx, graphql.DefaultErrorPresenter, graphql.DefaultRecover)
 
-			// Simulate OperationContext
-			oc := &graphql.OperationContext{
-				Operation: &ast.OperationDefinition{
-					Operation: opType,
-				},
+			nextCalled := false
+			next := func(ctx context.Context) graphql.ResponseHandler {
+				nextCalled = true
+				return graphql.OneShot(&graphql.Response{Data: []byte(`{}`)})
 			}
 
-			var blocked bool
-			var errMsg string
+			guard := auth.MutationGuard(tt.cfg.Server.ReadOnly, tt.cfg.Auth)
+			handler := guard(ctx, next)
 
-			// Evaluate guard logic
-			if oc.Operation != nil && oc.Operation.Operation == ast.Mutation {
-				if tt.cfg.Server.ReadOnly {
-					blocked = true
-					errMsg = "server is in read-only mode: mutations are disabled"
-				} else if tt.cfg.Auth.Enabled {
-					user := auth.ForContext(ctx)
-					if user == nil {
-						blocked = true
-						errMsg = "unauthorized: authentication required to execute mutations"
-					} else if !user.CanWrite() {
-						blocked = true
-						errMsg = "forbidden: write permissions required to execute mutations"
-					}
+			if blocked := !nextCalled; blocked != tt.shouldBlock {
+				t.Fatalf("expected blocked=%v, got %v", tt.shouldBlock, blocked)
+			}
+
+			resp := handler(ctx)
+			if resp == nil {
+				t.Fatal("expected a response on first call")
+			}
+			if tt.shouldBlock {
+				if len(resp.Errors) != 1 || resp.Errors[0].Message != tt.expectedError {
+					t.Errorf("expected error %q, got %v", tt.expectedError, resp.Errors)
 				}
 			}
 
-			if blocked != tt.shouldBlock {
-				t.Fatalf("expected blocked=%v, got %v (err: %s)", tt.shouldBlock, blocked, errMsg)
-			}
-			if tt.shouldBlock && errMsg != tt.expectedError {
-				t.Errorf("expected error %q, got %q", tt.expectedError, errMsg)
+			// Streaming transports (WebSocket) keep calling the handler until
+			// it returns nil; rejections must terminate after one response.
+			if again := handler(ctx); again != nil {
+				t.Errorf("expected nil on second call (one-shot), got %+v", again)
 			}
 		})
 	}
