@@ -12,8 +12,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
 
@@ -36,12 +38,13 @@ Commands:
   init [dir]   Scaffold a new project (couchgraph.yaml, schema/, couchdb/design/)
   serve        Start the GraphQL server for a project
   validate     Check schema, directives and referenced views without connecting
-  sync         Push design documents to CouchDB
+  sync         Push design documents and Mango indexes to CouchDB
   version      Print the version
 
 Flags (serve, validate, sync):
   -c, -config  Path to the project file (default "couchgraph.yaml")
   -port        Override the server port (serve only)
+  -w, -watch   Watch files and reload schema dynamically (serve only)
 
 Environment variables (COUCHDB_URL, COUCHDB_USER, COUCHDB_PASSWORD, PORT, ...)
 and a .env file in the working directory are honoured; values set in
@@ -82,6 +85,7 @@ func main() {
 type common struct {
 	configPath string
 	port       int
+	watch      bool
 }
 
 func parseFlags(name string, args []string) (*common, error) {
@@ -91,6 +95,8 @@ func parseFlags(name string, args []string) (*common, error) {
 	fs.StringVar(&c.configPath, "config", project.DefaultFile, "project file")
 	if name == "serve" {
 		fs.IntVar(&c.port, "port", 0, "server port")
+		fs.BoolVar(&c.watch, "w", false, "watch files and reload schema dynamically")
+		fs.BoolVar(&c.watch, "watch", false, "watch files and reload schema dynamically")
 	}
 	if err := fs.Parse(args); err != nil {
 		return nil, err
@@ -145,8 +151,10 @@ func runServe(args []string) error {
 		return err
 	}
 	if p.SyncOnStart() {
-		if err := syncDesignDocs(context.Background(), p, repo, func(file, id string, changed bool) {
+		if err := syncProject(context.Background(), p, repo, func(file, id string, changed bool) {
 			log.Info("design doc", zap.String("id", id), zap.String("file", file), zap.Bool("updated", changed))
+		}, func(name string, changed bool) {
+			log.Info("mango index", zap.String("name", name), zap.Bool("created", changed))
 		}); err != nil {
 			return err
 		}
@@ -157,7 +165,113 @@ func runServe(args []string) error {
 		return err
 	}
 	log.Info("schema loaded", zap.String("project", c.configPath), zap.Bool("core_api", p.CoreEnabled()))
-	return server.Run(cfg, log, server.Handler(cfg, log, eng))
+
+	dh := server.NewDynamicHandler(cfg, log, eng)
+	if c.watch {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go watchProject(ctx, c, repo, dh, log)
+	}
+
+	return server.Run(cfg, log, server.DynamicMux(cfg, log, dh))
+}
+
+func watchProject(ctx context.Context, c *common, repo *couch.Repository, dh *server.DynamicHandler, log *zap.Logger) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Error("failed to initialize file watcher", zap.Error(err))
+		return
+	}
+	defer watcher.Close()
+
+	_, p, err := load(c)
+	if err != nil {
+		log.Error("watch: failed to load project", zap.Error(err))
+		return
+	}
+
+	dirs := map[string]bool{p.Dir: true}
+	_ = filepath.WalkDir(p.Dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			base := filepath.Base(path)
+			if strings.HasPrefix(base, ".") || base == "node_modules" || base == "scratch" {
+				return filepath.SkipDir
+			}
+			dirs[path] = true
+		}
+		return nil
+	})
+
+	for dir := range dirs {
+		if err := watcher.Add(dir); err != nil {
+			log.Warn("watch: could not watch directory", zap.String("dir", dir), zap.Error(err))
+		}
+	}
+
+	log.Info("file watcher started (hot reload enabled)", zap.Int("watched_dirs", len(dirs)))
+
+	var (
+		mu    sync.Mutex
+		timer *time.Timer
+	)
+
+	reload := func() {
+		log.Info("change detected, reloading project...")
+		_, newP, err := load(c)
+		if err != nil {
+			log.Error("watch: reload project config failed", zap.Error(err))
+			return
+		}
+		if newP.SyncOnStart() {
+			if err := syncProject(context.Background(), newP, repo, func(file, id string, changed bool) {
+				if changed {
+					log.Info("design doc updated", zap.String("id", id), zap.String("file", file))
+				}
+			}, func(name string, changed bool) {
+				if changed {
+					log.Info("mango index created", zap.String("name", name))
+				}
+			}); err != nil {
+				log.Warn("watch: sync failed", zap.Error(err))
+			}
+		}
+		newEng, err := build(newP, repo)
+		if err != nil {
+			log.Error("watch: schema build failed (keeping previous schema active)", zap.Error(err))
+			return
+		}
+		dh.Update(newEng)
+		log.Info("schema reloaded successfully", zap.String("project", c.configPath))
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			ext := filepath.Ext(event.Name)
+			base := filepath.Base(event.Name)
+			if ext == ".graphqls" || ext == ".json" || ext == ".yaml" || ext == ".yml" || base == project.DefaultFile {
+				mu.Lock()
+				if timer != nil {
+					timer.Stop()
+				}
+				timer = time.AfterFunc(150*time.Millisecond, reload)
+				mu.Unlock()
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			log.Warn("watch: error", zap.Error(err))
+		}
+	}
 }
 
 // ── validate ───────────────────────────────────────────────────────────────
@@ -203,7 +317,7 @@ func runValidate(args []string) error {
 					view, _ = d.ArgumentMap(nil)["name"].(string)
 				case "hasMany":
 					view, _ = d.ArgumentMap(nil)["view"].(string)
-				case "field", "get", "find", "belongsTo":
+				case "field", "get", "find", "belongsTo", "create", "update", "delete":
 				default:
 					continue
 				}
@@ -215,7 +329,7 @@ func runValidate(args []string) error {
 		}
 	}
 
-	fmt.Printf("ok: %d types, %d fields, %d directive bindings, %d design docs\n", len(sortedTypes(schema)), fields, directives, len(docs))
+	fmt.Printf("ok: %d types, %d fields, %d directive bindings, %d design docs, %d indexes\n", len(sortedTypes(schema)), fields, directives, len(docs), len(p.Indexes))
 	for _, w := range warnings {
 		fmt.Println("warning:", w)
 	}
@@ -252,13 +366,26 @@ func runSync(args []string) error {
 	if err != nil {
 		return err
 	}
-	return syncDesignDocs(context.Background(), p, repo, func(file, id string, changed bool) {
+	return syncProject(context.Background(), p, repo, func(file, id string, changed bool) {
 		state := "unchanged"
 		if changed {
 			state = "updated"
 		}
 		fmt.Printf("%-10s %s (%s)\n", state, id, file)
+	}, func(name string, changed bool) {
+		state := "unchanged"
+		if changed {
+			state = "created"
+		}
+		fmt.Printf("%-10s index %s\n", state, name)
 	})
+}
+
+func syncProject(ctx context.Context, p *project.Project, store couch.Store, reportDoc func(file, id string, changed bool), reportIdx func(name string, changed bool)) error {
+	if err := syncDesignDocs(ctx, p, store, reportDoc); err != nil {
+		return err
+	}
+	return syncIndexes(ctx, p, store, reportIdx)
 }
 
 func syncDesignDocs(ctx context.Context, p *project.Project, store couch.Store, report func(file, id string, changed bool)) error {
@@ -275,6 +402,19 @@ func syncDesignDocs(ctx context.Context, p *project.Project, store couch.Store, 
 		}
 		id, _ := d.Doc["_id"].(string)
 		report(d.File, id, changed)
+	}
+	return nil
+}
+
+func syncIndexes(ctx context.Context, p *project.Project, store couch.Store, report func(name string, changed bool)) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	for _, idx := range p.Indexes {
+		changed, err := store.SyncIndex(ctx, idx)
+		if err != nil {
+			return fmt.Errorf("sync index %s: %w", idx.Name, err)
+		}
+		report(idx.Name, changed)
 	}
 	return nil
 }

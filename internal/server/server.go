@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -52,8 +53,24 @@ func Connect(ctx context.Context, cfg *config.Config, log *zap.Logger) (*couch.R
 	return couch.NewRepository(client), nil
 }
 
-// Handler builds the HTTP handler serving schema at /query.
-func Handler(cfg *config.Config, log *zap.Logger, schema graphql.ExecutableSchema) http.Handler {
+// DynamicHandler wraps an ExecutableSchema and allows atomically swapping it
+// at runtime, enabling hot schema reloads without restarting the HTTP server.
+type DynamicHandler struct {
+	cfg *config.Config
+	log *zap.Logger
+	mu  sync.RWMutex
+	srv http.Handler
+}
+
+// NewDynamicHandler creates a DynamicHandler initialized with schema.
+func NewDynamicHandler(cfg *config.Config, log *zap.Logger, schema graphql.ExecutableSchema) *DynamicHandler {
+	d := &DynamicHandler{cfg: cfg, log: log}
+	d.Update(schema)
+	return d
+}
+
+// Update atomically replaces the running ExecutableSchema with a new one.
+func (d *DynamicHandler) Update(schema graphql.ExecutableSchema) {
 	srv := handler.NewDefaultServer(schema)
 	srv.AddTransport(transport.Websocket{KeepAlivePingInterval: 10 * time.Second})
 	srv.AddTransport(transport.Options{})
@@ -62,10 +79,30 @@ func Handler(cfg *config.Config, log *zap.Logger, schema graphql.ExecutableSchem
 	srv.Use(extension.Introspection{})
 
 	// Mutation guard & auth enforcement (engine-agnostic).
-	srv.AroundOperations(auth.MutationGuard(cfg.Server.ReadOnly, cfg.Auth))
+	srv.AroundOperations(auth.MutationGuard(d.cfg.Server.ReadOnly, d.cfg.Auth))
+	wrapped := auth.Middleware(d.cfg.Auth, d.log)(srv)
 
+	d.mu.Lock()
+	d.srv = wrapped
+	d.mu.Unlock()
+}
+
+func (d *DynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	d.mu.RLock()
+	h := d.srv
+	d.mu.RUnlock()
+	h.ServeHTTP(w, r)
+}
+
+// Handler builds the HTTP handler serving schema at /query.
+func Handler(cfg *config.Config, log *zap.Logger, schema graphql.ExecutableSchema) http.Handler {
+	return DynamicMux(cfg, log, NewDynamicHandler(cfg, log, schema))
+}
+
+// DynamicMux builds the HTTP mux using a DynamicHandler for /query.
+func DynamicMux(cfg *config.Config, log *zap.Logger, dh *DynamicHandler) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/query", auth.Middleware(cfg.Auth, log)(srv))
+	mux.Handle("/query", dh)
 
 	if cfg.Metrics.Enabled {
 		path := cfg.Metrics.Path

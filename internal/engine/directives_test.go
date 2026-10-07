@@ -319,4 +319,3 @@ func TestLookupKey(t *testing.T) {
 		t.Errorf("LookupPath(value.min) = %v", got)
 	}
 }
-

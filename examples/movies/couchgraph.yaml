@@ -14,7 +14,16 @@ designDocs:
     - couchdb/design/*.json
   sync: on-start        # push views when the server starts (or run `couchgraph sync`)
 
+indexes:
+  - name: idx_movies_genre_rating
+    fields: [type, genres, rating, year]
+  - name: idx_movies_director_year
+    fields: [type, director, year]
+  - name: idx_movies_director_id
+    fields: [type, director_id]
+
 server:
   port: ${PORT:-8080}
   playground: true
-  readOnly: true        # read-only demo API
+  readOnly: false       # allow mutations in playground
+

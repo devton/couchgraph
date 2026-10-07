@@ -16,6 +16,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/devton/couchgraph/internal/config"
+	"github.com/devton/couchgraph/internal/couch"
 )
 
 // DefaultFile is the project file looked up in the working directory.
@@ -45,6 +46,9 @@ type Project struct {
 		// only via `couchgraph sync`.
 		Sync string `yaml:"sync"`
 	} `yaml:"designDocs"`
+
+	// Indexes lists Mango indexes to be created and kept in sync.
+	Indexes []couch.IndexDefinition `yaml:"indexes"`
 
 	Server struct {
 		Port       int   `yaml:"port"`

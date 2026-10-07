@@ -194,4 +194,9 @@ func (s *fakeStore) SubscribeChanges(ctx context.Context, since string) (<-chan 
 	return ch, nil
 }
 
+func (s *fakeStore) SyncIndex(_ context.Context, idx couch.IndexDefinition) (bool, error) {
+	s.record("SyncIndex", idx)
+	return true, nil
+}
+
 var _ couch.Store = (*fakeStore)(nil)

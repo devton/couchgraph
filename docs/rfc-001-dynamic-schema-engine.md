@@ -2,7 +2,7 @@
 
 | Field   | Value                                   |
 |---------|-----------------------------------------|
-| Status  | Steps 1–3 implemented (engine, directives, CLI); Steps 4–5 pending |
+| Status  | Steps 1–3 complete (engine, directives, typed mutations, CLI watch & index sync); Steps 4–5 next |
 | Authors | CouchGraph maintainers                  |
 | Created | 2026-10-06                              |
 
@@ -249,14 +249,16 @@ Distribution: goreleaser binaries, Homebrew tap, Docker image `ghcr.io/devton/co
 | Step | Scope | Exit criteria |
 |------|-------|---------------|
 | 1. Prototype | `internal/engine` serving the current core schema; `ENGINE=dynamic` switch in `cmd/server` | Parity tests: identical queries return identical JSON on both engines (incl. introspection, errors, subscriptions). If parity fails, stop cheaply |
-| 2. Directives | `couchgraph.yaml`, directive compiler, `examples/movies` migrated | Movies example served with zero Go code |
-| 3. CLI | `init`, `serve --watch`, `validate`, `sync` | End-to-end quickstart without Go toolchain |
-
-**Progress:** Step 1 done (parity suite in `internal/engine`, ~13% overhead vs generated code). Step 2 done (`examples/movies`, directive compiler, per-operation batch loader). Step 3 partially done: `init`, `serve`, `validate`, `sync` (`--watch` and Mango index sync pending). Apollo Federation is out of scope for the dynamic engine.
-| 4. JS resolvers | goja runtime with timeouts and `ctx.couch` | `@js` fields work, sandbox tests pass |
+| 2. Directives | `couchgraph.yaml`, directive compiler (`@field`, `@get`, `@find`, `@view`, `@belongsTo`, `@hasMany`, `@create`, `@update`, `@delete`), `examples/movies` migrated | Movies example served with zero Go code, typed queries & mutations supported |
+| 3. CLI | `init`, `serve --watch`, `validate`, `sync` (design docs & Mango indexes) | End-to-end quickstart without Go toolchain, live hot reload in dev |
+| 4. JS/TS resolvers | Sandbox runtime with timeouts and `ctx.couch` | `@js` fields work, sandbox tests pass |
 | 5. Go library | `pkg/couchgraph` public API | Movies example re-implemented with native Go resolvers on the same engine |
 
-The gqlgen-generated schema stays the default until Step 2 is complete; it is then retired in favour of the dynamic engine.
+**Progress:**
+- Step 1 complete: Parity suite in `internal/engine` passing (~13% overhead vs generated code).
+- Step 2 complete: Directive compiler with read and write directives (`@create`, `@update`, `@delete`), batch loader, and `examples/movies` schema.
+- Step 3 complete: Standalone CLI with `init`, `serve --watch` (fsnotify hot reload), `validate`, and `sync` (both MapReduce design docs and Mango indexes).
+- Steps 4 & 5: Next up. Apollo Federation is out of scope for the dynamic engine.
 
 ## 8. Trade-offs and Risks
 

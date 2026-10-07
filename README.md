@@ -167,13 +167,16 @@ extend type Query {
 
 | Directive | What it does |
 |---|---|
-| `@collection(type:)` | Maps a type to documents with `type == "..."`. `@find` adds that filter automatically, and `@get` returns `null` when the document belongs to another collection |
-| `@field(from:)` | Reads a field from a different key, including dot paths (`value.sum`) |
+| `@collection(type:)` | Maps a type to documents with `type == "..."`. `@find` adds that filter automatically, `@get` returns `null` for other collections, and `@create`/`@update` enforce the discriminator |
+| `@field(from:)` | Reads and writes a field from a different key (`box_office_usd`), including dot paths for reads (`value.sum`) |
 | `@get` | Fetches one document by `id` through a batched `_bulk_get` |
 | `@find(selector:, sort:, limit:)` | Runs a Mango `_find` query. `"$arg"` placeholders are filled from field arguments, and a filter is dropped when its argument is omitted |
 | `@view(name:, key:, reduce:, group:, includeDocs:)` | Queries a MapReduce view. Reduce rows come back as `{key, value}` |
 | `@belongsTo(field:)` | 1:1 relation. Lookups from every item in a list are batched into a single `_bulk_get` |
 | `@hasMany(view:, key:)` | 1:N relation through a view keyed by the parent `_id` |
+| `@create(input:)` | Creates a document with an auto-generated UUIDv7 ID and discriminator. Mutation fields only |
+| `@update(arg:, input:)` | Merges input into an existing document with optimistic concurrency (`rev`). Mutation fields only |
+| `@delete(arg:)` | Deletes a document with optional revision pinning. Returns previous document state |
 
 ### 3. Validate, then serve
 
@@ -182,10 +185,10 @@ cd examples/movies
 export COUCHDB_URL=http://localhost:5984 COUCHDB_USER=admin COUCHDB_PASSWORD=password
 
 couchgraph validate
-# ok: 14 types, 65 fields, 17 directive bindings, 1 design docs
+# ok: 14 types, 70 fields, 22 directive bindings, 1 design docs, 3 indexes
 
-couchgraph serve          # pushes couchdb/design/*.json, then serves on :8080
-couchgraph sync           # push design docs only (idempotent: "unchanged" when up to date)
+couchgraph serve -w       # pushes design docs & indexes, serves on :8080 with live hot reload
+couchgraph sync           # push design docs and indexes (idempotent: "unchanged" when up to date)
 ```
 
 `couchgraph.yaml` values can reference the environment, for example `url: ${COUCHDB_URL:-http://localhost:5984}`. A `.env` file in the working directory is loaded as well. Run `couchgraph init my-api` to scaffold a new project.
@@ -477,12 +480,11 @@ Every push and pull request runs [CI](./.github/workflows/ci.yml): `go mod tidy`
 - [x] Prometheus metrics endpoint (`/metrics`)
 - [ ] Full-Text Search Integration (CouchDB Nouveau / Lucene `_nouveau` & Mango `$text` operator)
 - [ ] Multi-database support: optional `COUCHDB_DATABASE` (default only), per-request database via `db` argument on generic operations, `COUCHDB_ALLOWED_DATABASES` allowlist with system databases (`_*`) always blocked, and DataLoader keyed by `db + id`
-- [x] Standalone config-driven mode: dynamic schema engine + SDL directives (`@collection`, `@field`, `@get`, `@find`, `@view`, `@belongsTo`, `@hasMany`) via `couchgraph.yaml` ([RFC-001](./docs/rfc-001-dynamic-schema-engine.md))
-- [x] CLI: `couchgraph init`, `serve`, `validate`, `sync` (design docs)
+- [x] Standalone config-driven mode: dynamic schema engine + SDL directives (`@collection`, `@field`, `@get`, `@find`, `@view`, `@belongsTo`, `@hasMany`, `@create`, `@update`, `@delete`) via `couchgraph.yaml` ([RFC-001](./docs/rfc-001-dynamic-schema-engine.md))
+- [x] CLI: `couchgraph init`, `serve --watch` (live hot reload), `validate`, `sync` (design docs & Mango indexes)
 - [x] CI: tests (race) + cross-platform binaries (linux/darwin/windows, amd64/arm64), GitHub Releases on `v*` tags
-- [ ] CLI: `serve --watch` (hot reload) and Mango index sync
 - [ ] Distribution: Homebrew tap and Docker image `ghcr.io/devton/couchgraph`
-- [ ] Custom resolvers without Go (embedded JS runtime) for logic beyond directives
+- [ ] Custom resolvers without Go (embedded JS/TS runtime) for logic beyond directives
 - [ ] Public Go library API (`pkg/couchgraph`) for native resolvers on the same engine
 - [ ] OpenTelemetry tracing
 

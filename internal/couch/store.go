@@ -23,6 +23,7 @@ type Store interface {
 	Databases(ctx context.Context) ([]string, error)
 	ServerInfo(ctx context.Context) (map[string]any, error)
 	SubscribeChanges(ctx context.Context, since string) (<-chan ChangeEvent, error)
+	SyncIndex(ctx context.Context, idx IndexDefinition) (created bool, err error)
 }
 
 var _ Store = (*Repository)(nil)

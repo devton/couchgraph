@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -106,15 +105,14 @@ func main() {
 		_, _ = repo.BulkDocs(ctx, deleteDocs)
 	}
 
-	// ── 3. Create Mango Indexes ───────────────────────────────────────────
-	logger.Info("Creating Mango indexes for movies...")
-	createIndex(ctx, cfg, "idx_movies_genre_rating", []string{"type", "genres", "rating", "year"})
-	createIndex(ctx, cfg, "idx_movies_director_year", []string{"type", "director", "year"})
-	createIndex(ctx, cfg, "idx_movies_director_id", []string{"type", "director_id"})
-
-	// ── 4. Create MapReduce Views ─────────────────────────────────────────
-	logger.Info("Syncing MapReduce design documents from project...", zap.String("project", projectPath))
-	designIDs := syncDesignDocs(ctx, repo, projectPath, logger)
+	// ── 3. Sync Mango Indexes & MapReduce Views from Project ───────────────
+	logger.Info("Syncing design documents and indexes from project...", zap.String("project", projectPath))
+	p, err := project.Load(projectPath)
+	if err != nil {
+		logger.Fatal("failed to load project", zap.String("path", projectPath), zap.Error(err))
+	}
+	indexNames := syncProjectIndexes(ctx, repo, p, logger)
+	designIDs := syncProjectDesignDocs(ctx, repo, p, logger)
 
 	// ── 5. Dataset Definition (IMDb Top Classics) ─────────────────────────
 	nolanID := mustUUIDv7()
@@ -385,44 +383,29 @@ func main() {
 	fmt.Printf("\n🎬 IMDb Dataset seeded into CouchDB (%s)!\n", cfg.CouchDB.Database)
 	fmt.Printf("   • %d Movies & %d Directors inserted with UUIDv7 IDs\n", len(movies), len(directors))
 	fmt.Printf("   • Foreign keys (director_id) linked across documents\n")
-	fmt.Printf("   • Mango Indexes created: idx_movies_genre_rating, idx_movies_director_year, idx_movies_director_id\n")
+	fmt.Printf("   • Mango Indexes synced from %s: %s\n", projectPath, strings.Join(indexNames, ", "))
 	fmt.Printf("   • Design documents synced from %s: %s\n", projectPath, strings.Join(designIDs, ", "))
 	fmt.Printf("   • Open http://localhost:%d to test with GraphQL Playground!\n\n", cfg.Server.Port)
 }
 
-func createIndex(ctx context.Context, cfg *config.Config, indexName string, fields []string) {
-	url := fmt.Sprintf("%s/%s/_index", strings.TrimSuffix(cfg.CouchDB.URL, "/"), cfg.CouchDB.Database)
-	payload := map[string]any{
-		"index": map[string]any{
-			"fields": fields,
-		},
-		"name": indexName,
-		"type": "json",
+func syncProjectIndexes(ctx context.Context, repo *couch.Repository, p *project.Project, logger *zap.Logger) []string {
+	names := make([]string, 0, len(p.Indexes))
+	for _, idx := range p.Indexes {
+		changed, err := repo.SyncIndex(ctx, idx)
+		if err != nil {
+			logger.Fatal("failed to sync mango index", zap.String("name", idx.Name), zap.Error(err))
+		}
+		status := "unchanged"
+		if changed {
+			status = "created"
+		}
+		logger.Info("mango index synced", zap.String("name", idx.Name), zap.String("status", status))
+		names = append(names, idx.Name)
 	}
-	body, _ := json.Marshal(payload)
-
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(string(body)))
-	req.Header.Set("Content-Type", "application/json")
-	if cfg.CouchDB.User != "" && cfg.CouchDB.Password != "" {
-		req.SetBasicAuth(cfg.CouchDB.User, cfg.CouchDB.Password)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		fmt.Printf("⚠️ Warning creating index %s: %v\n", indexName, err)
-		return
-	}
-	defer resp.Body.Close()
+	return names
 }
 
-// syncDesignDocs pushes the design documents declared by a couchgraph.yaml
-// project (the same files `couchgraph sync` uses), so seeding and serving the
-// example never fight over the view definitions.
-func syncDesignDocs(ctx context.Context, store couch.Store, projectPath string, logger *zap.Logger) []string {
-	p, err := project.Load(projectPath)
-	if err != nil {
-		logger.Fatal("failed to load project", zap.String("path", projectPath), zap.Error(err))
-	}
+func syncProjectDesignDocs(ctx context.Context, store couch.Store, p *project.Project, logger *zap.Logger) []string {
 	docs, err := p.LoadDesignDocs()
 	if err != nil {
 		logger.Fatal("failed to read design documents", zap.Error(err))
