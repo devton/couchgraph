@@ -17,6 +17,7 @@ import (
 
 	"github.com/devton/couchgraph/internal/config"
 	"github.com/devton/couchgraph/internal/couch"
+	"github.com/devton/couchgraph/internal/project"
 )
 
 type Movie struct {
@@ -53,8 +54,9 @@ func mustUUIDv7() string {
 }
 
 func main() {
-	var targetDB string
+	var targetDB, projectPath string
 	flag.StringVar(&targetDB, "db", "couchgraph_movies", "Target database name for IMDb seed data")
+	flag.StringVar(&projectPath, "project", "examples/movies/couchgraph.yaml", "couchgraph.yaml whose design documents are pushed (single source of truth for the views)")
 	flag.Parse()
 
 	// ── 1. Config ─────────────────────────────────────────────────────────
@@ -111,8 +113,8 @@ func main() {
 	createIndex(ctx, cfg, "idx_movies_director_id", []string{"type", "director_id"})
 
 	// ── 4. Create MapReduce Views ─────────────────────────────────────────
-	logger.Info("Creating MapReduce design document (_design/movies)...")
-	createDesignDoc(ctx, cfg)
+	logger.Info("Syncing MapReduce design documents from project...", zap.String("project", projectPath))
+	designIDs := syncDesignDocs(ctx, repo, projectPath, logger)
 
 	// ── 5. Dataset Definition (IMDb Top Classics) ─────────────────────────
 	nolanID := mustUUIDv7()
@@ -384,7 +386,7 @@ func main() {
 	fmt.Printf("   • %d Movies & %d Directors inserted with UUIDv7 IDs\n", len(movies), len(directors))
 	fmt.Printf("   • Foreign keys (director_id) linked across documents\n")
 	fmt.Printf("   • Mango Indexes created: idx_movies_genre_rating, idx_movies_director_year, idx_movies_director_id\n")
-	fmt.Printf("   • MapReduce Views created: _design/movies (by_genre, by_year, top_rated, ratings_stats, box_office_by_genre, all_movies, all_directors, by_director_id)\n")
+	fmt.Printf("   • Design documents synced from %s: %s\n", projectPath, strings.Join(designIDs, ", "))
 	fmt.Printf("   • Open http://localhost:%d to test with GraphQL Playground!\n\n", cfg.Server.Port)
 }
 
@@ -413,113 +415,31 @@ func createIndex(ctx context.Context, cfg *config.Config, indexName string, fiel
 	defer resp.Body.Close()
 }
 
-func createDesignDoc(ctx context.Context, cfg *config.Config) {
-	url := fmt.Sprintf("%s/%s/_design/movies", strings.TrimSuffix(cfg.CouchDB.URL, "/"), cfg.CouchDB.Database)
-
-	// Fetch existing _rev if design doc already exists
-	var rev string
-	getReq, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if cfg.CouchDB.User != "" && cfg.CouchDB.Password != "" {
-		getReq.SetBasicAuth(cfg.CouchDB.User, cfg.CouchDB.Password)
-	}
-	if getResp, err := http.DefaultClient.Do(getReq); err == nil {
-		if getResp.StatusCode == http.StatusOK {
-			var existing map[string]any
-			if err := json.NewDecoder(getResp.Body).Decode(&existing); err == nil {
-				if r, ok := existing["_rev"].(string); ok {
-					rev = r
-				}
-			}
-		}
-		getResp.Body.Close()
-	}
-
-	ddoc := map[string]any{
-		"views": map[string]any{
-			"by_genre": map[string]string{
-				"map": `function (doc) {
-					if (doc.type === "movie" && Array.isArray(doc.genres)) {
-						doc.genres.forEach(function (g) {
-							emit(g, { title: doc.title, year: doc.year, rating: doc.rating, director: doc.director });
-						});
-					}
-				}`,
-				"reduce": "_count",
-			},
-			"by_year": map[string]string{
-				"map": `function (doc) {
-					if (doc.type === "movie" && doc.year) {
-						emit(doc.year, { title: doc.title, rating: doc.rating, director: doc.director });
-					}
-				}`,
-				"reduce": "_count",
-			},
-			"top_rated": map[string]string{
-				"map": `function (doc) {
-					if (doc.type === "movie" && doc.rating) {
-						emit(doc.rating, { title: doc.title, year: doc.year, director: doc.director });
-					}
-				}`,
-				"reduce": "_count",
-			},
-			"ratings_stats": map[string]string{
-				"map": `function (doc) {
-					if (doc.type === "movie" && Array.isArray(doc.genres) && typeof doc.rating === "number") {
-						doc.genres.forEach(function (g) {
-							emit(g, doc.rating);
-						});
-					}
-				}`,
-				"reduce": "_stats",
-			},
-			"box_office_by_genre": map[string]string{
-				"map": `function (doc) {
-					if (doc.type === "movie" && Array.isArray(doc.genres) && typeof doc.box_office_usd === "number") {
-						doc.genres.forEach(function (g) {
-							emit(g, doc.box_office_usd);
-						});
-					}
-				}`,
-				"reduce": "_stats",
-			},
-			"all_movies": map[string]string{
-				"map": `function (doc) {
-					if (doc.type === "movie") {
-						emit(doc._id, doc);
-					}
-				}`,
-			},
-			"all_directors": map[string]string{
-				"map": `function (doc) {
-					if (doc.type === "director") {
-						emit(doc._id, doc);
-					}
-				}`,
-			},
-			"by_director_id": map[string]string{
-				"map": `function (doc) {
-					if (doc.type === "movie" && doc.director_id) {
-						emit(doc.director_id, doc);
-					}
-				}`,
-			},
-		},
-	}
-	if rev != "" {
-		ddoc["_rev"] = rev
-	}
-	body, _ := json.Marshal(ddoc)
-
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPut, url, strings.NewReader(string(body)))
-	req.Header.Set("Content-Type", "application/json")
-	if cfg.CouchDB.User != "" && cfg.CouchDB.Password != "" {
-		req.SetBasicAuth(cfg.CouchDB.User, cfg.CouchDB.Password)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
+// syncDesignDocs pushes the design documents declared by a couchgraph.yaml
+// project (the same files `couchgraph sync` uses), so seeding and serving the
+// example never fight over the view definitions.
+func syncDesignDocs(ctx context.Context, store couch.Store, projectPath string, logger *zap.Logger) []string {
+	p, err := project.Load(projectPath)
 	if err != nil {
-		fmt.Printf("⚠️ Warning creating design doc: %v\n", err)
-		return
+		logger.Fatal("failed to load project", zap.String("path", projectPath), zap.Error(err))
 	}
-	defer resp.Body.Close()
+	docs, err := p.LoadDesignDocs()
+	if err != nil {
+		logger.Fatal("failed to read design documents", zap.Error(err))
+	}
+	ids := make([]string, 0, len(docs))
+	for _, d := range docs {
+		id, _ := d.Doc["_id"].(string)
+		changed, err := couch.SyncDesignDoc(ctx, store, d.Doc)
+		if err != nil {
+			logger.Fatal("failed to sync design document", zap.String("file", d.File), zap.Error(err))
+		}
+		status := "unchanged"
+		if changed {
+			status = "updated"
+		}
+		logger.Info("design document synced", zap.String("id", id), zap.String("file", d.File), zap.String("status", status))
+		ids = append(ids, id)
+	}
+	return ids
 }

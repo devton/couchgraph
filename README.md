@@ -100,12 +100,14 @@ Open [http://localhost:8080](http://localhost:8080) for the interactive **GraphQ
 CouchGraph includes an on-demand dataset seeder (`cmd/seed/main.go`) that populates classic movies, directors, foreign key relations, Mango indexes, and MapReduce views:
 
 ```bash
-# Seed the database configured in your .env:
+# Seed the default test database (couchgraph_movies); connection settings come from .env:
 go run ./cmd/seed
 
-# Or seed into a dedicated test database:
-go run ./cmd/seed -db couchgraph_movies
+# Or pick another database:
+go run ./cmd/seed -db my_movies_db
 ```
+
+The seeder does not hard-code any views. It pushes the design documents declared by [`examples/movies/couchgraph.yaml`](./examples/movies/couchgraph.yaml) (`-project` flag), the same files `couchgraph sync` uses, so seeding and serving never rewrite each other's view indexes. Each run deletes and recreates the movie/director documents, so their UUIDv7 IDs change.
 
 Once seeded, open [http://localhost:8080](http://localhost:8080) and run queries from [`examples/movies_queries.graphql`](./examples/movies_queries.graphql).
 
