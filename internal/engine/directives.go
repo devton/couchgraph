@@ -76,6 +76,7 @@ const (
 
 var directiveNames = map[string]bool{
 	"field": true, "get": true, "find": true, "view": true, "belongsTo": true, "hasMany": true,
+	"create": true, "update": true, "delete": true,
 }
 
 // CompileDirectives registers a resolver for every field annotated with a
@@ -108,7 +109,7 @@ func CompileDirectives(e *Engine, store couch.Store) error {
 			}
 			coord := def.Name + "." + fd.Name
 			if len(found) > 1 {
-				problems = append(problems, fmt.Sprintf("%s: only one of @field/@get/@find/@view/@belongsTo/@hasMany is allowed", coord))
+				problems = append(problems, fmt.Sprintf("%s: only one of @field/@get/@find/@view/@belongsTo/@hasMany/@create/@update/@delete is allowed", coord))
 				continue
 			}
 			c := &compiler{e: e, store: store, def: def, fd: fd}
@@ -151,6 +152,12 @@ func (c *compiler) compile(d *ast.Directive) error {
 		return c.compileBelongsTo(args)
 	case "hasMany":
 		return c.compileHasMany(args)
+	case "create":
+		return c.compileCreate(args)
+	case "update":
+		return c.compileUpdate(args)
+	case "delete":
+		return c.compileDelete(args)
 	}
 	return nil
 }

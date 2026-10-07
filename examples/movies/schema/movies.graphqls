@@ -66,3 +66,46 @@ extend type Query {
   "Box office statistics per genre (_stats reduce, grouped)."
   boxOfficeByGenre: [GenreBoxOffice!]! @view(name: "movies/box_office_by_genre", reduce: true, group: true)
 }
+
+input CreateMovieInput {
+  title: String!
+  year: Int!
+  rating: Float!
+  votes: Int!
+  runtimeMinutes: Int!
+  genres: [String!]!
+  cast: [String!]!
+  plot: String!
+  boxOffice: Int @field(from: "box_office_usd")
+  directorId: ID
+}
+
+input UpdateMovieInput {
+  title: String
+  year: Int
+  rating: Float
+  votes: Int
+  runtimeMinutes: Int
+  genres: [String!]
+  cast: [String!]
+  plot: String
+  boxOffice: Int @field(from: "box_office_usd")
+  directorId: ID
+}
+
+input CreateDirectorInput {
+  name: String!
+  birthYear: Int!
+  nationality: String!
+  knownFor: [String!]!
+}
+
+extend type Mutation {
+  createMovie(input: CreateMovieInput!): Movie! @create
+  updateMovie(id: ID!, input: UpdateMovieInput!, rev: String): Movie! @update
+  deleteMovie(id: ID!, rev: String): Movie! @delete
+
+  createDirector(input: CreateDirectorInput!): Director! @create
+  deleteDirector(id: ID!, rev: String): Director! @delete
+}
+
