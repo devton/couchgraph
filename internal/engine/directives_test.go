@@ -2,6 +2,7 @@ package engine_test
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -22,6 +23,7 @@ func moviesEngine(t *testing.T, store *fakeStore) *engine.Engine {
 		Store:   store,
 		Core:    true,
 		Sources: []*ast.Source{{Name: "movies.graphqls", Input: string(sdl)}},
+		Dir:     "../../examples/movies",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -58,6 +60,13 @@ func TestDirectivesMoviesExample(t *testing.T) {
 			name:  "@get enforces the @collection type",
 			query: `{ movie(id: "` + d1 + `") { title } director(id: "` + d1 + `") { name } }`,
 			want:  `{"data":{"movie":null,"director":{"name":"Lana Wachowski"}}}`,
+		},
+		{
+			name:  "@ts resolver computes custom recommendations via TypeScript",
+			query: `{ topRecommendations(limit: 1) { title } }`,
+			wantCalls: []string{
+				`Find [{"selector":{"rating":{"$gte":8.8},"type":"movie"},"limit":1}]`,
+			},
 		},
 		{
 			name:  "@view with $arg key and includeDocs",
@@ -134,7 +143,7 @@ func TestDirectiveValidation(t *testing.T) {
 		{
 			"two resolving directives",
 			`extend type Query { x(id: ID!): Document @get @view(name: "a/b") }`,
-			`only one of`,
+			`only one resolving directive`,
 		},
 		{
 			"unknown directive is a schema error",
@@ -317,5 +326,67 @@ func TestLookupKey(t *testing.T) {
 	}
 	if got := engine.LookupPath(doc, "value.min"); got != 2 {
 		t.Errorf("LookupPath(value.min) = %v", got)
+	}
+}
+
+func TestTypeScriptCustomResolver(t *testing.T) {
+	tmp := t.TempDir()
+
+	// 1. Script with default export and TypeScript types
+	helloFile := filepath.Join(tmp, "hello.ts")
+	err := os.WriteFile(helloFile, []byte(`
+interface GreetingContext {
+  args: { name: string };
+}
+
+export default function(ctx: GreetingContext): string {
+  return "Hello, " + ctx.args.name + "!";
+}
+`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// 2. Script with named export
+	mathFile := filepath.Join(tmp, "math.ts")
+	err = os.WriteFile(mathFile, []byte(`
+export function multiply(ctx: any): number {
+  return ctx.args.a * ctx.args.b;
+}
+`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sdl := `
+extend type Query {
+  hello(name: String!): String! @ts(file: "hello.ts")
+  multiply(a: Int!, b: Int!): Int! @resolver(file: "math.ts", export: "multiply")
+}
+`
+
+	store := newFakeStore()
+	e, err := engine.Build(engine.Options{
+		Store:   store,
+		Core:    true,
+		Sources: []*ast.Source{{Name: "test.graphqls", Input: sdl}},
+		Dir:     tmp,
+	})
+	if err != nil {
+		t.Fatalf("engine build error: %v", err)
+	}
+
+	// Test hello
+	gotHello := run(t, e, `{ hello(name: "CouchGraph") }`, "", runOptions{})
+	wantHello := `{"data":{"hello":"Hello, CouchGraph!"}}`
+	if len(gotHello) != 1 || gotHello[0] != wantHello {
+		t.Fatalf("got: %v, want: %s", gotHello, wantHello)
+	}
+
+	// Test multiply
+	gotMath := run(t, e, `{ multiply(a: 6, b: 7) }`, "", runOptions{})
+	wantMath := `{"data":{"multiply":42}}`
+	if len(gotMath) != 1 || gotMath[0] != wantMath {
+		t.Fatalf("got: %v, want: %s", gotMath, wantMath)
 	}
 }

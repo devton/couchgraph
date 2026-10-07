@@ -177,6 +177,8 @@ extend type Query {
 | `@create(input:)` | Creates a document with an auto-generated UUIDv7 ID and discriminator. Mutation fields only |
 | `@update(arg:, input:)` | Merges input into an existing document with optimistic concurrency (`rev`). Mutation fields only |
 | `@delete(arg:)` | Deletes a document with optional revision pinning. Returns previous document state |
+| `@resolver(file:, export:)` / `@ts` | Custom business logic in TypeScript/JavaScript, transpiled on-the-fly via esbuild and sandboxed with Goja (no Node.js required) |
+
 
 ### 3. Validate, then serve
 
@@ -484,7 +486,7 @@ Every push and pull request runs [CI](./.github/workflows/ci.yml): `go mod tidy`
 - [x] CLI: `couchgraph init`, `serve --watch` (live hot reload), `validate`, `sync` (design docs & Mango indexes)
 - [x] CI: tests (race) + cross-platform binaries (linux/darwin/windows, amd64/arm64), GitHub Releases on `v*` tags
 - [ ] Distribution: Homebrew tap and Docker image `ghcr.io/devton/couchgraph`
-- [ ] Custom resolvers without Go (embedded JS/TS runtime) for logic beyond directives
+- [x] Custom resolvers without Go: TypeScript/JavaScript runtime via embedded esbuild + Goja (`@resolver`, `@ts`, `@js`)
 - [ ] Public Go library API (`pkg/couchgraph`) for native resolvers on the same engine
 - [ ] OpenTelemetry tracing
 

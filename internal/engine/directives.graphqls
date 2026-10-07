@@ -74,3 +74,14 @@ An optional `rev` argument pins the expected revision. Returns the document as i
 before deletion.
 """
 directive @delete(arg: String = "id") on FIELD_DEFINITION
+
+"""
+Custom resolver written in TypeScript or JavaScript (.ts / .js).
+`file` is relative to the project directory (e.g. "resolvers/custom.ts").
+`export` is the exported function name (default "default").
+The function receives a context object { args, parent, couch, user }.
+"""
+directive @resolver(file: String!, export: String = "default") on FIELD_DEFINITION
+directive @ts(file: String!, export: String = "default") on FIELD_DEFINITION
+directive @js(file: String!, export: String = "default") on FIELD_DEFINITION
+

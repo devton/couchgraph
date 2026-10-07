@@ -126,7 +126,12 @@ func build(p *project.Project, store couch.Store) (*engine.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return engine.Build(engine.Options{Store: store, Core: p.CoreEnabled(), Sources: sources})
+	return engine.Build(engine.Options{
+		Store:   store,
+		Core:    p.CoreEnabled(),
+		Sources: sources,
+		Dir:     p.Dir,
+	})
 }
 
 // ── serve ──────────────────────────────────────────────────────────────────

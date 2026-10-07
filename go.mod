@@ -4,6 +4,8 @@ go 1.26
 
 require (
 	github.com/99designs/gqlgen v0.17.95
+	github.com/dop251/goja v0.0.0-20261006212518-44620e89763c
+	github.com/evanw/esbuild v0.28.2
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-kivik/kivik/v4 v4.5.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -20,7 +22,10 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coder/websocket v1.8.15 // indirect
+	github.com/dlclark/regexp2/v2 v2.8.1 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
+	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect

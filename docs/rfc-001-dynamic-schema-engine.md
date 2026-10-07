@@ -258,7 +258,8 @@ Distribution: goreleaser binaries, Homebrew tap, Docker image `ghcr.io/devton/co
 - Step 1 complete: Parity suite in `internal/engine` passing (~13% overhead vs generated code).
 - Step 2 complete: Directive compiler with read and write directives (`@create`, `@update`, `@delete`), batch loader, and `examples/movies` schema.
 - Step 3 complete: Standalone CLI with `init`, `serve --watch` (fsnotify hot reload), `validate`, and `sync` (both MapReduce design docs and Mango indexes).
-- Steps 4 & 5: Next up. Apollo Federation is out of scope for the dynamic engine.
+- Step 4 complete: TypeScript and JavaScript custom resolver runtime via embedded esbuild + Goja (`@resolver`, `@ts`, `@js`), zero Node.js dependency, sandboxed with timeouts and `ctx.couch`.
+- Step 5: Next up. Apollo Federation is out of scope for the dynamic engine.
 
 ## 8. Trade-offs and Risks
 

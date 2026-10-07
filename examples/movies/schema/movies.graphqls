@@ -65,6 +65,9 @@ extend type Query {
 
   "Box office statistics per genre (_stats reduce, grouped)."
   boxOfficeByGenre: [GenreBoxOffice!]! @view(name: "movies/box_office_by_genre", reduce: true, group: true)
+
+  "Custom algorithmic recommendations computed in TypeScript via @ts."
+  topRecommendations(limit: Int = 3): [Movie!]! @ts(file: "resolvers/recommendations.ts")
 }
 
 input CreateMovieInput {

@@ -12,7 +12,9 @@ import (
 
 	"github.com/vektah/gqlparser/v2/ast"
 
+	"github.com/devton/couchgraph/internal/auth"
 	"github.com/devton/couchgraph/internal/couch"
+	"github.com/devton/couchgraph/internal/engine/runtime"
 )
 
 //go:embed directives.graphqls
@@ -31,6 +33,10 @@ type Options struct {
 	Core bool
 	// Sources are the user SDL files (types annotated with directives).
 	Sources []*ast.Source
+	// Dir is the project root directory, used to resolve script files.
+	Dir string
+	// Runtime executes TypeScript/JavaScript resolvers (@resolver, @ts, @js).
+	Runtime *runtime.Runtime
 }
 
 // Build assembles a complete engine: directive definitions, optional core API,
@@ -49,7 +55,11 @@ func Build(opts Options) (*Engine, error) {
 	if opts.Core {
 		RegisterCore(e, opts.Store)
 	}
-	if err := CompileDirectives(e, opts.Store); err != nil {
+	rt := opts.Runtime
+	if rt == nil && opts.Dir != "" {
+		rt = runtime.New(opts.Dir, opts.Store)
+	}
+	if err := CompileDirectivesWithRuntime(e, opts.Store, rt); err != nil {
 		return nil, err
 	}
 	if err := e.Check(); err != nil {
@@ -77,11 +87,17 @@ const (
 var directiveNames = map[string]bool{
 	"field": true, "get": true, "find": true, "view": true, "belongsTo": true, "hasMany": true,
 	"create": true, "update": true, "delete": true,
+	"resolver": true, "ts": true, "js": true,
 }
 
 // CompileDirectives registers a resolver for every field annotated with a
 // CouchGraph directive. It reports all problems at once.
 func CompileDirectives(e *Engine, store couch.Store) error {
+	return CompileDirectivesWithRuntime(e, store, nil)
+}
+
+// CompileDirectivesWithRuntime registers resolvers with an optional script Runtime.
+func CompileDirectivesWithRuntime(e *Engine, store couch.Store, rt *runtime.Runtime) error {
 	e.WithRequestScope(func(ctx context.Context) context.Context {
 		return context.WithValue(ctx, loaderKey{}, couch.NewBatchLoader(store, batchWindow, batchMax))
 	})
@@ -109,10 +125,10 @@ func CompileDirectives(e *Engine, store couch.Store) error {
 			}
 			coord := def.Name + "." + fd.Name
 			if len(found) > 1 {
-				problems = append(problems, fmt.Sprintf("%s: only one of @field/@get/@find/@view/@belongsTo/@hasMany/@create/@update/@delete is allowed", coord))
+				problems = append(problems, fmt.Sprintf("%s: only one resolving directive is allowed", coord))
 				continue
 			}
-			c := &compiler{e: e, store: store, def: def, fd: fd}
+			c := &compiler{e: e, store: store, rt: rt, def: def, fd: fd}
 			if err := c.compile(found[0]); err != nil {
 				problems = append(problems, fmt.Sprintf("%s @%s: %v", coord, found[0].Name, err))
 			}
@@ -127,6 +143,7 @@ func CompileDirectives(e *Engine, store couch.Store) error {
 type compiler struct {
 	e     *Engine
 	store couch.Store
+	rt    *runtime.Runtime
 	def   *ast.Definition
 	fd    *ast.FieldDefinition
 }
@@ -158,7 +175,45 @@ func (c *compiler) compile(d *ast.Directive) error {
 		return c.compileUpdate(args)
 	case "delete":
 		return c.compileDelete(args)
+	case "resolver", "ts", "js":
+		return c.compileResolver(args)
 	}
+	return nil
+}
+
+func (c *compiler) compileResolver(args map[string]any) error {
+	file, _ := args["file"].(string)
+	if file == "" {
+		return fmt.Errorf("directive argument 'file' must not be empty")
+	}
+	exportName, _ := args["export"].(string)
+	if exportName == "" {
+		exportName = "default"
+	}
+	if c.rt == nil {
+		return fmt.Errorf("custom script runtime is not configured (pass Dir in Options)")
+	}
+	script, err := c.rt.Load(file, exportName)
+	if err != nil {
+		return err
+	}
+	rt := c.rt
+	c.e.Resolve(c.coord(), func(ctx context.Context, p Params) (any, error) {
+		var userMap map[string]any
+		if u := auth.ForContext(ctx); u != nil {
+			userMap = map[string]any{
+				"sub":    u.Subject,
+				"email":  u.Email,
+				"roles":  u.Roles,
+				"scopes": u.Scopes,
+			}
+		}
+		return rt.Run(ctx, script, runtime.Context{
+			Args:   p.Args,
+			Parent: p.Parent,
+			User:   userMap,
+		})
+	})
 	return nil
 }
 
